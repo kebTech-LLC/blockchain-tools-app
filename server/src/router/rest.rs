@@ -1,11 +1,11 @@
 use crate::router::resources::{
-    new_resource::route_new_resource,
+    new_resource::route_new_resource, public_key::route_public_key,
   
 };
 use std::{future::Future, pin::Pin};
 
 // use crate::{auth::Authentication, services::resource_service::ResourceService};
-use cnctd_server::{auth::CnctdAuth, router::{error::{ErrorCode, ErrorResponse}, response::SuccessResponse, HttpMethod, RestRouterFunction}};
+use cnctd_server::{auth::CnctdAuth, router::{error::{ErrorCode, ErrorResponse}, response::SuccessResponse, HttpMethod, RestRouterFunction}, server::CnctdServer};
 use serde_json::Value;
 use state::InitCell;
 use anyhow::anyhow;
@@ -35,7 +35,7 @@ impl RestRouterFunction for RestRouter {
 }
 
 async fn route(method: HttpMethod, path: String, data: Value, auth_token: Option<String>, client_id: Option<String>, ip_address: Option<String>) -> Result<SuccessResponse, ErrorResponse> {
-    let (resource, operation) = parse_path(&path);
+    let (resource, operation) = CnctdServer::path_to_resource_and_operation(&path);
     println!(
         "Routing request...method: {:?}, path: {}, resource: {}, operation: {:?}, data: {:?}",
         method, path, resource, operation, !data.is_null()
@@ -46,6 +46,9 @@ async fn route(method: HttpMethod, path: String, data: Value, auth_token: Option
     match resource {
         Resource::NewResource => {
             Ok(route_new_resource(method, operation, data, auth_token, client_id).await?)
+        }
+        Resource::PublicKey => {
+            Ok(route_public_key(method, operation, data, auth_token, None).await?)
         }
         _ => {
             let response = ErrorResponse::new(
@@ -60,8 +63,7 @@ async fn route(method: HttpMethod, path: String, data: Value, auth_token: Option
 #[derive(Debug)]
 pub enum Resource {
     NewResource,
-    ResourceB,
-    ResourceC,
+    PublicKey,
     Unrecognized,
 }
 
@@ -69,6 +71,7 @@ impl Resource {
     pub fn from_str(s: &str) -> Self {
         match s {
             "new_resource" => Resource::NewResource,
+            "public_key" => Resource::PublicKey,
             _ => Resource::Unrecognized,
         }
     }

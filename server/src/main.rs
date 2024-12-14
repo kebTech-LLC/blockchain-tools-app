@@ -8,6 +8,8 @@ use router::{rest::RestRouter, socket::SocketRouter};
 // use session::client_session::ClientSession;
 
 pub mod router;
+pub mod blockchains;
+pub mod external_apis;
 // pub mod db;
 
 #[tokio::main]
@@ -28,11 +30,11 @@ async fn main() {
 
     // Allowed origins for CORS
     let ip_address = local_ip().map(|ip| ip.to_string()).unwrap_or_else(|_| "127.0.0.1".to_string());
-    let allowed_origins = vec![
-        "http://localhost:3000".to_string(),
-        "https://example.com".to_string(),
-        format!("http://{}:{}", ip_address, port_str),
-    ];
+    // let allowed_origins = vec![
+    //     "http://localhost:3000".to_string(),
+    //     "https://example.com".to_string(),
+    //     format!("http://{}:{}", ip_address, port_str),
+    // ];
 
     // Server configuration
     let server_config = ServerConfig::new(
@@ -41,7 +43,7 @@ async fn main() {
         client_dir,
         rest_router,
         Some(10),                  // Maximum concurrent connections
-        Some(allowed_origins),     // Allowed CORS origins
+        None,     // Allowed CORS origins
         None,                      // Optional TLS config
     );
 
