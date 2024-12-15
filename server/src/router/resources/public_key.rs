@@ -1,10 +1,11 @@
+use chrono::{TimeZone, Utc};
 use cnctd_server::{
     bad_request, internal_server_error, not_found, unauthorized, success_data, success_msg,
     router::{error::{ErrorCode, ErrorResponse}, response::SuccessResponse, HttpMethod},
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use crate::{blockchains::solana::Solana, router::rest::Resource};
+use crate::{blockchains::solana::{account_snapshot::{self, AccountSnapshot}, Solana}, router::rest::Resource};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct DataIn {
@@ -18,6 +19,7 @@ struct DataIn {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct PublicKeyRequest {
     public_key: String,
+    date: Option<String>,
 }
 
 enum Operation {
@@ -83,12 +85,27 @@ pub async fn route_public_key(
 
             let stake_accounts = Solana::get_stake_accounts(&request.public_key).await
                 .map_err(|e| internal_server_error!(format!("Failed to fetch stake accounts: {}", e)))?;
+            
+            let date = request.date.unwrap();
+            let target_date = chrono::DateTime::parse_from_str(&date, "%Y-%m-%d %H:%M:%S")
+                .map_err(|e| bad_request!(format!("Invalid date format: {}", e)))?
+                .with_timezone(&Utc);
+
+            let mut account_snapshots: Vec<AccountSnapshot> = Vec::new();
+            for (pub_key, stake_account) in stake_accounts {
+                let pub_key_str = &pub_key.to_string();
+                let snapshot = AccountSnapshot::get_account_snapshot_at_date(pub_key_str, target_date)
+                    .await
+                    .map_err(|e| internal_server_error!(format!("Failed to fetch account snapshot: {}", e)))?;
+                account_snapshots.push(snapshot);
+            }
 
             // Return the public key in a response object
             let response = json!({
                 "message": "Public key received successfully",
                 "account_balance": account_balance,
-                "stake_accounts": stake_accounts,
+                "account_snapshots": account_snapshots,
+                // "stake_accounts": stake_accounts,
             });
 
             Ok(success_data!(response))

@@ -1,6 +1,6 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct AccountInfo {
     pub pubkey: String,    // Public key of the account
     pub lamports: u64,     // Balance in lamports

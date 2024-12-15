@@ -1,18 +1,51 @@
-use std::str::FromStr;
+pub mod account_snapshot;
 
-use crate::external_apis::helius::{stake_account::StakeAccount, Helius};
+use std::{str::FromStr, time::Duration};
+
 use anyhow::{Result, anyhow};
-use solana_client::rpc_client::RpcClient;
-use solana_sdk::{pubkey::Pubkey, signature::Signature};
+use solana_client::{nonblocking::rpc_client::RpcClient, rpc_config::RpcProgramAccountsConfig, rpc_filter::RpcFilterType};
+use solana_sdk::{account::Account, pubkey::Pubkey, signature::Signature};
 use solana_transaction_status::UiTransactionEncoding;
 pub struct Solana {}
 
 impl Solana {
-    pub async fn get_stake_accounts(public_key: &str) -> anyhow::Result<Vec<StakeAccount>> {
-        let helius = Helius::new()?;
-        let stake_accounts = helius.get_stake_accounts(public_key).await?;
-        Ok(stake_accounts)
+    pub async fn get_stake_accounts(wallet_pubkey: &str) -> Result<Vec<(Pubkey, Account)>, Box<dyn std::error::Error>> {
+        let rpc_url = "https://api.mainnet-beta.solana.com";
+        let client = RpcClient::new_with_timeout(rpc_url.into(), Duration::from_secs(360));
+    
+        // Stake Program ID
+        let stake_program_id = Pubkey::from_str("Stake11111111111111111111111111111111111111")?;
+    
+        // Wallet public key
+        let wallet_pubkey = Pubkey::from_str(wallet_pubkey)?;
+    
+        // Filters: data size = 200, authorized staker = wallet_pubkey
+        let filters = Some(vec![
+            RpcFilterType::DataSize(200), // Only stake accounts (200 bytes in size)
+            RpcFilterType::Memcmp(
+                solana_client::rpc_filter::Memcmp::new_base58_encoded(
+                    44,                           // Offset in StakeState where `authorized staker` starts
+                    wallet_pubkey.as_ref(),    // Wallet public key in base58 format
+                )
+            ),
+        ]);
+    
+        // Query the stake accounts
+        let config = RpcProgramAccountsConfig {
+            filters,
+            account_config: solana_client::rpc_config::RpcAccountInfoConfig {
+                encoding: Some(solana_account_decoder::UiAccountEncoding::Base64),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+    
+        let accounts = client.get_program_accounts_with_config(&stake_program_id, config).await?;
+
+    
+        Ok(accounts)
     }
+    
 
     pub async fn get_balance(public_key: &str) -> Result<u64> {
         // Solana RPC endpoint (Devnet or Mainnet)
@@ -25,6 +58,7 @@ impl Solana {
         // Fetch the account balance
         let balance = client
             .get_balance(&pubkey)
+            .await
             .map_err(|e| anyhow::anyhow!("Failed to fetch balance: {}", e))?;
     
         Ok(balance)
@@ -41,6 +75,7 @@ impl Solana {
         // Get recent transaction signatures for the public key
         let signatures = client
             .get_signatures_for_address(&pubkey)
+            .await
             .map_err(|e| anyhow!("Failed to fetch transaction signatures: {}", e))?;
     
         // Get the most recent signature (if any exist)
@@ -52,6 +87,7 @@ impl Solana {
             // Fetch the transaction details
             let transaction = client
                 .get_transaction(&signature, UiTransactionEncoding::Json)
+                .await
                 .map_err(|e| anyhow!("Failed to fetch transaction details: {}", e))?;
     
             // Return the transaction as a JSON object

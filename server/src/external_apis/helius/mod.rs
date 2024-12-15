@@ -1,6 +1,7 @@
 pub mod stake_account;
 pub mod account_info;
 
+use account_info::{AccountInfo, AccountInfoResponse};
 use reqwest::Client;
 use stake_account::{StakeAccount, StakeAccountsResponse};
 
