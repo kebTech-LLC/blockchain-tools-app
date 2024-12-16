@@ -5,7 +5,7 @@ use cnctd_server::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use crate::{blockchains::solana::{account_snapshot::{self, AccountSnapshot}, Solana}, router::rest::Resource};
+use crate::{blockchains::solana::{account_snapshot::{self, AccountSnapshot}, Solana}, external_apis::helius::Helius, router::rest::Resource};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct DataIn {
@@ -86,26 +86,35 @@ pub async fn route_public_key(
             let stake_accounts = Solana::get_stake_accounts(&request.public_key).await
                 .map_err(|e| internal_server_error!(format!("Failed to fetch stake accounts: {}", e)))?;
             
-            let date = request.date.unwrap();
-            let target_date = chrono::DateTime::parse_from_str(&date, "%Y-%m-%d %H:%M:%S")
-                .map_err(|e| bad_request!(format!("Invalid date format: {}", e)))?
-                .with_timezone(&Utc);
+            // let date = request.date.unwrap();
+            // let target_date = chrono::DateTime::parse_from_str(&date, "%Y-%m-%d %H:%M:%S")
+            //     .map_err(|e| bad_request!(format!("Invalid date format: {}", e)))?
+            //     .with_timezone(&Utc);
 
-            let mut account_snapshots: Vec<AccountSnapshot> = Vec::new();
-            for (pub_key, stake_account) in stake_accounts {
-                let pub_key_str = &pub_key.to_string();
-                let snapshot = AccountSnapshot::get_account_snapshot_at_date(pub_key_str, target_date)
-                    .await
-                    .map_err(|e| internal_server_error!(format!("Failed to fetch account snapshot: {}", e)))?;
-                account_snapshots.push(snapshot);
-            }
+            // let mut account_snapshots: Vec<AccountSnapshot> = Vec::new();
+            // for (pub_key, stake_account) in stake_accounts {
+            //     let pub_key_str = &pub_key.to_string();
+            //     let snapshot = AccountSnapshot::get_account_snapshot_at_date(pub_key_str, target_date)
+            //         .await
+            //         .map_err(|e| internal_server_error!(format!("Failed to fetch account snapshot: {}", e)))?;
+            //     account_snapshots.push(snapshot);
+            // }
+            let helius = Helius::new()
+                .map_err(|e| internal_server_error!(format!("Failed to initialize Helius client: {}", e)))?;
+
+            // let transaction_history = helius.get_transaction_history(&request.public_key).await
+            //     .map_err(|e| internal_server_error!(format!("Failed to fetch transaction history: {}", e)))?;
+
+            let stake_accounts = helius.get_stake_accounts_from_history(&request.public_key).await
+                .map_err(|e| internal_server_error!(format!("Failed to fetch stake accounts: {}", e)))?;
 
             // Return the public key in a response object
             let response = json!({
                 "message": "Public key received successfully",
                 "account_balance": account_balance,
-                "account_snapshots": account_snapshots,
-                // "stake_accounts": stake_accounts,
+                // "transaction_history": transaction_history,
+                // "account_snapshots": account_snapshots,
+                "stake_accounts": stake_accounts,
             });
 
             Ok(success_data!(response))

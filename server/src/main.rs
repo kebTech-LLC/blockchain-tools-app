@@ -9,7 +9,7 @@ use router::{rest::RestRouter, socket::SocketRouter};
 
 pub mod router;
 pub mod blockchains;
-// pub mod external_apis;
+pub mod external_apis;
 // pub mod db;
 
 #[tokio::main]
