@@ -1,4 +1,5 @@
-use std::{env, sync::Arc};
+use std::{env, sync::Arc, thread};
+use centralized_marketplaces::coinbase::Coinbase;
 use cnctd_server::{
     server::{CnctdServer, ServerConfig},
     socket::SocketConfig,
@@ -10,6 +11,7 @@ use router::{rest::RestRouter, socket::SocketRouter};
 pub mod router;
 pub mod blockchains;
 pub mod external_apis;
+pub mod centralized_marketplaces;
 // pub mod db;
 
 #[tokio::main]
@@ -75,6 +77,17 @@ async fn main() {
     // } else {
     //     println!("Database initialized.");
     // }
+
+    let coinbase = Coinbase::new(
+        "wss://ws-feed.exchange.coinbase.com",
+        vec!["SOL-USD"],
+        vec!["ticker"],
+    );
+
+    // Use tokio::spawn to manage the WebSocket connection
+    tokio::spawn(async move {
+        coinbase.connect_and_subscribe().await;
+    });
 
     // Start the server
     if let Err(e) = CnctdServer::start(server_config, Some(socket_config)).await {
