@@ -78,16 +78,16 @@ async fn main() {
     //     println!("Database initialized.");
     // }
 
-    let coinbase = Coinbase::new(
-        "wss://ws-feed.exchange.coinbase.com",
-        vec!["SOL-USD"],
-        vec!["ticker"],
-    );
+    // let coinbase = Coinbase::new(
+    //     "wss://ws-feed.exchange.coinbase.com",
+    //     vec!["SOL-USD"],
+    //     vec!["ticker"],
+    // );
 
-    // Use tokio::spawn to manage the WebSocket connection
-    tokio::spawn(async move {
-        coinbase.connect_and_subscribe().await;
-    });
+    // // Use tokio::spawn to manage the WebSocket connection
+    // tokio::spawn(async move {
+    //     coinbase.connect_and_subscribe().await;
+    // });
 
     // Start the server
     if let Err(e) = CnctdServer::start(server_config, Some(socket_config)).await {
