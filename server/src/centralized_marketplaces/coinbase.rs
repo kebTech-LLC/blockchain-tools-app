@@ -1,8 +1,15 @@
+use std::sync::{Arc, Mutex};
+
 use serde::{Deserialize, Serialize};
+use state::InitCell;
 use tokio::net::TcpStream;
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 use futures_util::{StreamExt, SinkExt}; // For split and async operations
 use url::Url;
+use reqwest::Client;
+use anyhow::{Result, anyhow};
+
+pub static SOL_PRICE: InitCell<Arc<Mutex<CoinbasePriceData>>> = InitCell::new();
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Coinbase {
@@ -10,6 +17,19 @@ pub struct Coinbase {
     pub product_ids: Vec<String>,
     pub channels: Vec<String>,
 }
+
+#[derive(Debug, Deserialize)]
+struct CoinbaseResponse {
+    data: CoinbasePriceData,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CoinbasePriceData {
+    base: String,
+    currency: String,
+    amount: String,
+}
+
 
 impl Coinbase {
     pub fn new(url: &str, product_ids: Vec<&str>, channels: Vec<&str>) -> Self {
@@ -46,6 +66,30 @@ impl Coinbase {
                 println!("Received: {}", text);
             }
         }
+    }
+
+    pub async fn get_sol_usd_price() -> Result<f64> {
+        let url = "https://api.coinbase.com/v2/prices/SOL-USD/spot";
+    
+        // Create an HTTP client
+        let client = Client::new();
+    
+        // Make a GET request to the Coinbase API
+        let response: CoinbaseResponse = client
+            .get(url)
+            .send()
+            .await?
+            .json()
+            .await?;
+    
+        // Parse the price as f64
+        let price = response
+            .data
+            .amount
+            .parse::<f64>()
+            .map_err(|e| anyhow!("Failed to parse price: {}", e))?;
+    
+        Ok(price)
     }
 }
 

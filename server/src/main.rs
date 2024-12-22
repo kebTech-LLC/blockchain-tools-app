@@ -79,23 +79,52 @@ async fn main() {
     //     println!("Database initialized.");
     // }
 
-    // let coinbase = Coinbase::new(
-    //     "wss://ws-feed.exchange.coinbase.com",
-    //     vec!["SOL-USD"],
-    //     vec!["ticker"],
-    // );
+    let coinbase = Coinbase::new(
+        "wss://ws-feed.exchange.coinbase.com",
+        vec!["SOL-USD"],
+        vec!["ticker"],
+    );
 
-    // // Use tokio::spawn to manage the WebSocket connection
-    // tokio::spawn(async move {
-    //     coinbase.connect_and_subscribe().await;
-    // });
-
-    match Solana::get_liquidity_pools().await {
+    // Use tokio::spawn to manage the WebSocket connection
+    tokio::spawn(async move {
+        coinbase.connect_and_subscribe().await;
+    });
+    
+    let solana = Solana::new();
+    match solana.get_pool_info("8sLbNZoA1cfnvMJLPfp98ZLAnFSYCFApfJKMbiXNLwxj").await {
         Ok(liquidity_pools) => {
             println!("Liquidity pools: {:?}", liquidity_pools);
         }
         Err(e) => {
             println!("Error fetching liquidity pools: {:?}", e);
+        }
+    }
+
+    let wallet_pubkey = env::var("SOLANA_PUBLIC_KEY").expect("SOLANA_PUBLIC_KEY not set");
+    match solana.get_sol_balance(&wallet_pubkey).await {
+        Ok(balance) => {
+            println!("SOL balance: {}", balance);
+        }
+        Err(e) => {
+            println!("Error fetching SOL balance: {:?}", e);
+        }
+    }
+
+    match solana.get_usdc_balance(&wallet_pubkey).await {
+        Ok(balance) => {
+            println!("USDC balance: {}", balance);
+        }
+        Err(e) => {
+            println!("Error fetching USDC balance: {:?}", e);
+        }
+    }
+
+    match solana.get_sol_usd_price().await {
+        Ok(price) => {
+            println!("SOL/USDC price: {}", price);
+        }
+        Err(e) => {
+            println!("Error fetching SOL/USDC price: {:?}", e);
         }
     }
 

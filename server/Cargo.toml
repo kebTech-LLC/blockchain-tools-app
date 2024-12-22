@@ -30,3 +30,4 @@ chrono = "0.4.39"
 tokio-tungstenite ={ version = "0.26.1", features = ["native-tls"] }
 futures-util = "0.3.31"
 url = "2.5.4"
+pyth-sdk-solana = "0.10.2"
