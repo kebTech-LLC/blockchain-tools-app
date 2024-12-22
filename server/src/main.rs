@@ -1,4 +1,5 @@
 use std::{env, sync::Arc, thread};
+use blockchains::solana::Solana;
 use centralized_marketplaces::coinbase::Coinbase;
 use cnctd_server::{
     server::{CnctdServer, ServerConfig},
@@ -88,6 +89,15 @@ async fn main() {
     // tokio::spawn(async move {
     //     coinbase.connect_and_subscribe().await;
     // });
+
+    match Solana::get_liquidity_pools().await {
+        Ok(liquidity_pools) => {
+            println!("Liquidity pools: {:?}", liquidity_pools);
+        }
+        Err(e) => {
+            println!("Error fetching liquidity pools: {:?}", e);
+        }
+    }
 
     // Start the server
     if let Err(e) = CnctdServer::start(server_config, Some(socket_config)).await {

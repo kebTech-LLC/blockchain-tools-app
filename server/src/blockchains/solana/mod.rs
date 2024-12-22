@@ -1,8 +1,10 @@
 pub mod account_snapshot;
+pub mod liquidity_pools;
 
 use std::{str::FromStr, time::Duration};
 
 use anyhow::{Result, anyhow};
+use serde_json::Value;
 use solana_client::{nonblocking::rpc_client::RpcClient, rpc_config::RpcProgramAccountsConfig, rpc_filter::RpcFilterType};
 use solana_sdk::{account::Account, pubkey::Pubkey, signature::Signature};
 use solana_transaction_status::UiTransactionEncoding;
@@ -96,5 +98,11 @@ impl Solana {
             // No transactions found for the public key
             Ok(None)
         }
+    }
+
+    pub async fn get_liquidity_pools() -> Result<Value> {
+        let liquidity_pools = liquidity_pools::SolanaLiquidityPools::new();
+        let pools = liquidity_pools.get_liquidity_pools().await?;
+        Ok(pools)
     }
 }
