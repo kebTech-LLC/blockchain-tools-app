@@ -1,9 +1,8 @@
 use std::sync::{Arc, Mutex};
 
 use serde::{Deserialize, Serialize};
-use solana::test_orca_ipc;
+use solana::pool_manager::PoolManager;
 use state::InitCell;
-use tokio::net::TcpStream;
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 use futures_util::{StreamExt, SinkExt}; // For split and async operations
 use url::Url;
@@ -65,7 +64,7 @@ impl Coinbase {
         while let Some(Ok(msg)) = read.next().await {
             if let Message::Text(text) = msg {
                 println!("Received: {}", text);
-                test_orca_ipc().await.expect("Failed to test Orca IPC");
+                PoolManager::test_orca_ipc().await.expect("Failed to test Orca IPC");
             }
         }
     }

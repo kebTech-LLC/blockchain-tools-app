@@ -6,12 +6,14 @@ use cnctd_server::{
 };
 use local_ip_address::local_ip;
 use router::{rest::RestRouter, socket::SocketRouter};
-use solana::{get_orca_positions_for_wallet, get_orca_sol_usdc_pool};
+use solana::pool_manager::PoolManager;
+use solana_pools::SolanaPools;
 // use session::client_session::ClientSession;
 
 pub mod router;
 pub mod external_apis;
 pub mod centralized_marketplaces;
+pub mod solana_pools;
 // pub mod db;
 
 #[tokio::main]
@@ -77,9 +79,10 @@ async fn main() {
     // } else {
     //     println!("Database initialized.");
     // }
+    PoolManager::get_orca_sol_usdc_pool().await.expect("Failed to get Orca SOL/USDC pool");
+    PoolManager::open_sol_usdc_position().await.expect("Failed to open SOL/USDC position");
 
-    get_orca_sol_usdc_pool().await.unwrap();
-    get_orca_positions_for_wallet().await.unwrap();
+    SolanaPools::get_sol_balance().await.expect("Failed to get SOL balance");
 
     let coinbase = Coinbase::new(
         "wss://ws-feed.exchange.coinbase.com",
