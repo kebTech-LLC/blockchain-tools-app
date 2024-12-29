@@ -6,6 +6,7 @@ use cnctd_server::{
 };
 use local_ip_address::local_ip;
 use router::{rest::RestRouter, socket::SocketRouter};
+use solana::{get_orca_positions_for_wallet, get_orca_sol_usdc_pool};
 // use session::client_session::ClientSession;
 
 pub mod router;
@@ -76,6 +77,9 @@ async fn main() {
     // } else {
     //     println!("Database initialized.");
     // }
+
+    get_orca_sol_usdc_pool().await.unwrap();
+    get_orca_positions_for_wallet().await.unwrap();
 
     let coinbase = Coinbase::new(
         "wss://ws-feed.exchange.coinbase.com",
