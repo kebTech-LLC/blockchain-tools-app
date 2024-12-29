@@ -1,5 +1,4 @@
 use std::{env, sync::Arc, thread};
-use blockchains::solana::Solana;
 use centralized_marketplaces::coinbase::Coinbase;
 use cnctd_server::{
     server::{CnctdServer, ServerConfig},
@@ -10,7 +9,6 @@ use router::{rest::RestRouter, socket::SocketRouter};
 // use session::client_session::ClientSession;
 
 pub mod router;
-pub mod blockchains;
 pub mod external_apis;
 pub mod centralized_marketplaces;
 // pub mod db;
@@ -90,43 +88,7 @@ async fn main() {
         coinbase.connect_and_subscribe().await;
     });
     
-    let solana = Solana::new();
-    match solana.get_pool_info("8sLbNZoA1cfnvMJLPfp98ZLAnFSYCFApfJKMbiXNLwxj").await {
-        Ok(liquidity_pools) => {
-            println!("Liquidity pools: {:?}", liquidity_pools);
-        }
-        Err(e) => {
-            println!("Error fetching liquidity pools: {:?}", e);
-        }
-    }
-
-    let wallet_pubkey = env::var("SOLANA_PUBLIC_KEY").expect("SOLANA_PUBLIC_KEY not set");
-    match solana.get_sol_balance(&wallet_pubkey).await {
-        Ok(balance) => {
-            println!("SOL balance: {}", balance);
-        }
-        Err(e) => {
-            println!("Error fetching SOL balance: {:?}", e);
-        }
-    }
-
-    match solana.get_usdc_balance(&wallet_pubkey).await {
-        Ok(balance) => {
-            println!("USDC balance: {}", balance);
-        }
-        Err(e) => {
-            println!("Error fetching USDC balance: {:?}", e);
-        }
-    }
-
-    match solana.get_sol_usd_price().await {
-        Ok(price) => {
-            println!("SOL/USDC price: {}", price);
-        }
-        Err(e) => {
-            println!("Error fetching SOL/USDC price: {:?}", e);
-        }
-    }
+   
 
     // Start the server
     if let Err(e) = CnctdServer::start(server_config, Some(socket_config)).await {
