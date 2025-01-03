@@ -6,8 +6,9 @@ use cnctd_server::{
 };
 use local_ip_address::local_ip;
 use router::{rest::RestRouter, socket::SocketRouter};
-use solana::pool_manager::PoolManager;
+use solana::{pool_manager::PoolManager, wallet::Wallet};
 use solana_pools::SolanaPools;
+use solana_sdk::signer::Signer;
 // use session::client_session::ClientSession;
 
 pub mod router;
@@ -79,10 +80,13 @@ async fn main() {
     // } else {
     //     println!("Database initialized.");
     // }
-    PoolManager::get_orca_sol_usdc_pool().await.expect("Failed to get Orca SOL/USDC pool");
+    // PoolManager::get_orca_sol_usdc_pool().await.expect("Failed to get Orca SOL/USDC pool");
     PoolManager::open_sol_usdc_position().await.expect("Failed to open SOL/USDC position");
 
     SolanaPools::get_sol_balance().await.expect("Failed to get SOL balance");
+
+    let wallet = Wallet::get_public_key().await.unwrap();
+    PoolManager::get_orca_positions_for_wallet("312yxT6PFcauztXCfG5jNqcRXqMDCm9HeLBJwbaHL6kH").await.expect("Failed to get Orca positions for wallet");
 
     let coinbase = Coinbase::new(
         "wss://ws-feed.exchange.coinbase.com",
@@ -91,9 +95,9 @@ async fn main() {
     );
 
     // Use tokio::spawn to manage the WebSocket connection
-    tokio::spawn(async move {
-        coinbase.connect_and_subscribe().await;
-    });
+    // tokio::spawn(async move {
+    //     coinbase.connect_and_subscribe().await;
+    // });
     
    
 
