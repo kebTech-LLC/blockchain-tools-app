@@ -81,12 +81,14 @@ async fn main() {
     //     println!("Database initialized.");
     // }
     // PoolManager::get_orca_sol_usdc_pool().await.expect("Failed to get Orca SOL/USDC pool");
-    PoolManager::open_sol_usdc_position().await.expect("Failed to open SOL/USDC position");
+    // PoolManager::open_sol_usdc_position().await.expect("Failed to open SOL/USDC position");
 
-    SolanaPools::get_sol_balance().await.expect("Failed to get SOL balance");
+    // SolanaPools::get_sol_balance().await.expect("Failed to get SOL balance");
 
+    // PoolManager::get_orca_sol_usdc_pool().await.expect("Failed to get Orca SOL/USDC pool");
     let wallet = Wallet::get_public_key().await.unwrap();
     PoolManager::get_orca_positions_for_wallet("312yxT6PFcauztXCfG5jNqcRXqMDCm9HeLBJwbaHL6kH").await.expect("Failed to get Orca positions for wallet");
+
 
     let coinbase = Coinbase::new(
         "wss://ws-feed.exchange.coinbase.com",
