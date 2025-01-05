@@ -1,308 +1,299 @@
 import { v4 as uuidv4 } from 'uuid';
-import { artists, auth, visitor } from '@/state'
-import { IncomingSocketMessage } from './router';
-import api from '@/api';
-import { Http } from '@capacitor-community/http';
 
-
-const host = location.host === 'localhost'? 'cnctd.studio': location.host;
-const protocol = location.protocol === 'http:'? 'http:': 'https:';
-
-// const host = '192.168.88.247:5050';
-// const protocol = 'http:';
-console.log('host', host);
-console.log('protocol', protocol);
-console.log('bones')
+const host = location.host;
+const protocol = location.protocol === 'http:' ? 'http:' : 'https:';
 
 enum HttpMethod {
-    GET = 'GET',
-    POST = 'POST',
-    PUT = 'PUT',
-    DELETE = 'DELETE',
+  GET = 'GET',
+  POST = 'POST',
+  PUT = 'PUT',
+  DELETE = 'DELETE',
 }
 
 export interface Response {
-    success: boolean;
-    status: string;
-    msg?: string;
-    data?: any;
+  success: boolean;
+  status: string;
+  msg?: string;
+  data?: any;
 }
 
 export interface Message {
-    resource: string;
-    operation: string;
-    user_id: string;
-    data: any;
-
-    constructor(resource: string, operation: string, user_id: string, data: any): Message;
+  resource: string;
+  operation: string;
+  user_id: string;
+  data: any;
 }
 
 export interface ClientInfo {
-    client_id: string;
-    user_id: string;
-    authenticated: boolean;
-    subscriptions: string[];
-    connected: boolean;
-    server_id: string;
-    data: any;
+  client_id: string;
+  user_id: string;
+  authenticated: boolean;
+  subscriptions: string[];
+  connected: boolean;
+  server_id: string;
+  data: any;
 }
-
 
 export class Server {
-    socket: WebSocket | undefined;
-    clientId: string | undefined;
-    info: ServerInfo | undefined;
-    catalogSynced: boolean = false;
+  socket: WebSocket | undefined;
+  clientId: string | undefined;
+  catalogSynced: boolean = false;
 
-    constructor() {
-        this.socketListeners.bind(this);
-    }
-    
-    post(resource: string, operation: string, data: any): Promise<Response> {
-        return new Promise((ok, err) => {
-            this.request(HttpMethod.POST, resource, operation, data)
-                .then(response => ok(response))
-                .catch(e => err(e))
+  constructor() {
+    this.socketListeners.bind(this);
+  }
+
+  post(resource: string, operation: string, data: any): Promise<Response> {
+    return this.request(HttpMethod.POST, resource, operation, data);
+  }
+
+  get(resource: string, operation: string, data?: any): Promise<Response> {
+    return this.request(HttpMethod.GET, resource, operation, data);
+  }
+
+  put(resource: string, operation: string, data?: any): Promise<Response> {
+    return this.request(HttpMethod.PUT, resource, operation, data);
+  }
+
+  delete(resource: string, operation: string, data?: any): Promise<Response> {
+    return this.request(HttpMethod.DELETE, resource, operation, data);
+  }
+
+  request(
+    requestMethod: HttpMethod,
+    resource: string,
+    operation: string,
+    data?: any
+  ): Promise<Response> {
+    return new Promise((resolve, reject) => {
+      // Serialize data (remove proxies, cyclical references, etc.)
+      const serializedData = data ? JSON.parse(JSON.stringify(data)) : {};
+
+      let url = `${protocol}//${host}/api/${resource}/${operation}`;
+      const isQueryMethod = [HttpMethod.GET, HttpMethod.DELETE].includes(requestMethod);
+
+      if (isQueryMethod && Object.keys(serializedData).length) {
+        url += `?${new URLSearchParams(serializedData).toString()}`;
+      }
+
+      // Example headers; adjust or remove as needed
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        // Include any additional headers you need:
+        // 'Authorization': `Bearer <YOUR_TOKEN_HERE>`,
+        // 'Client-Id': this.clientId ?? '',
+      };
+
+      const fetchOptions: RequestInit = {
+        method: requestMethod,
+        headers,
+      };
+
+      if (!isQueryMethod) {
+        // Attach the data for POST/PUT
+        fetchOptions.body = JSON.stringify(serializedData);
+      }
+
+      fetch(url, fetchOptions)
+        .then(async (resp) => {
+          const result = await resp.json();
+          const responseData: Response = {
+            success: result.success,
+            status: resp.status.toString(),
+            msg: result.msg,
+            data: result.data,
+          };
+          resolve(responseData);
+        })
+        .catch((error) => {
+          console.error('Fetch error:', error);
+          reject(error);
         });
+    });
+  }
+
+  /**
+   * Example socket registration with fetch
+   * Replace this with however your server provides a client ID or WebSocket token
+   */
+  registerSocket(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      console.log('Registering socket...');
+      // Example endpoint that returns a clientId or similar token
+      fetch(`${protocol}//${host}/api/sessions/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+        .then((resp) => resp.json())
+        .then((data) => {
+          if (!data.clientId) {
+            console.error('No clientId returned from server');
+            reject('No clientId returned from server');
+            return;
+          }
+          this.clientId = data.clientId;
+          const wsProtocol = protocol.includes('https') ? 'wss://' : 'ws://';
+          this.socket = new WebSocket(
+            `${wsProtocol}${host}/ws?client_id=${this.clientId}`
+          );
+          this.socket.onerror = (e) => reject(e);
+          this.socketListeners();
+          resolve();
+        })
+        .catch((e) => reject(e));
+    });
+  }
+
+  restartSocket() {
+    console.log('Restarting socket...');
+    if (this.socket) {
+      this.socket.close();
+      this.socket = undefined;
+    }
+    this.registerSocket().catch((err) => console.error('Socket restart failed', err));
+  }
+
+  /**
+   * Attach the event listeners for this.socket
+   */
+  async socketListeners() {
+    if (!this.socket) {
+      console.error('Socket is not defined');
+      return;
     }
 
-    get(resource: string, operation: string, data?: any): Promise<Response> {
-        return new Promise((ok, err) => {
-            this.request(HttpMethod.GET, resource, operation, data)
-                .then(response => ok(response))
-                .catch(e => err(e))
-        });
+    this.socket.onopen = () => {
+      console.log('WebSocket open');
+    };
+
+    this.socket.onmessage = (m) => {
+      // In a real setup, you might route messages to different handlers
+      // For now, just log the data or parse it as needed
+      try {
+        const data = JSON.parse(m.data);
+        console.log('Received WebSocket message:', data);
+      } catch (err) {
+        console.error('Error parsing WebSocket message:', err);
+      }
+    };
+
+    this.socket.onerror = (e) => {
+      console.error('WebSocket error', e);
+    };
+
+    this.socket.onclose = () => {
+      this.catalogSynced = false;
+      console.log('Socket closed. Attempting to reconnect every 5 seconds.');
+      const intervalId = setInterval(() => {
+        this.registerSocket()
+          .then(() => {
+            console.log('Reconnected successfully. Stopping attempts.');
+            clearInterval(intervalId);
+          })
+          .catch((error) => {
+            console.error('Reconnection attempt failed:', error);
+          });
+      }, 5000);
+    };
+  }
+
+  /**
+   * Listens for a specific response channel once, then calls your callback
+   */
+  socketResponseListener(responseChannel: string, callback: (data: any) => void) {
+    if (!this.socket) {
+      console.error('Socket is not defined');
+      return;
     }
-    
-    put(resource: string, operation: string, data?: any): Promise<Response> {
-        return new Promise((ok, err) => {
-            this.request(HttpMethod.PUT, resource, operation, data)
-                .then(response => ok(response))
-                .catch(e => err(e))
-        });
-    }
-
-    delete(resource: string, operation: string, data?: any): Promise<Response> {
-        return new Promise((ok, err) => {
-            this.request(HttpMethod.DELETE, resource, operation, data)
-                .then(response => ok(response))
-                .catch(e => err(e))
-        });
-    }
-
-    request(requestMethod: HttpMethod, resource: string, operation: string, data?: any): Promise<Response> {
-        return new Promise((ok, err) => {
-            // Serialize data by removing Proxy wrappers and any non-serializable elements
-            const serializedData = data ? JSON.parse(JSON.stringify(data)) : {};
-    
-            let url = `${protocol}//${host}/api/${resource}/${operation}`;
-            url = [HttpMethod.GET, HttpMethod.DELETE].includes(requestMethod) ? url + '?' + new URLSearchParams(serializedData) : url;
-    
-            const options = {
-                url,
-                method: requestMethod,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': auth.userSession?.access_token || '',
-                    'Client-Id': this.clientId || '',
-                },
-                data: [HttpMethod.POST, HttpMethod.PUT].includes(requestMethod) ? serializedData : undefined,
-            };
-    
-            Http.request(options)
-                .then(response => {
-                    const responseData = response.data;
-                    const res: Response = {
-                        success: responseData.success,
-                        status: response.status.toString(),
-                        msg: responseData.msg,
-                        data: responseData.data,
-                    };
-                    ok(res);
-                })
-                .catch(e => {
-                    console.error('error', e);
-                    err(e);
-                });
-        });
-    }
-    
-    
-
-    registerSocket(): Promise<void> {
-        console.log('registering socket')
-        return new Promise((ok, err) => {
-            api.sessions.register()
-                .then(async clientId => {
-                    if (!clientId) {
-                        console.log('No client id returned from server');
-                        err('No client id returned from server');
-                    }
-                    this.clientId = clientId;
-                    const wsProtocol = protocol.includes('s')? 'wss://' : 'ws://';
-                    this.socket = new WebSocket(wsProtocol + host + '/ws?client_id=' + this.clientId);
-                    this.socket.onerror = (e) => err(e);
-                    await this.socketListeners();
-                    ok()
-                })
-                .catch(e => err(e));
-        });
-    }
-
-    // registerSocket(): Promise<void> {
-    //     return new Promise((resolve, reject) => {
-    //         if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-    //             resolve();
-    //             return;
-    //         }
-    
-    //         console.log('registering socket')
-    //         const subscriptions = ['server-info'];
-    //         // if (auth.userAccount?.isAdmin) subscriptions.push('client-info');
-    //         const unauthString = !auth.loggedIn && visitor.mode === 'share' ? '&unauth_id=' + visitor.shareId : '';
-    //         console.log('unauth string', unauthString);
-    //         const registrationUrl = `${protocol}//${host}/register?subscriptions=${subscriptions}` + unauthString;
-    //         fetch(registrationUrl, { 
-    //             // headers: {
-    //             //     'Content-Type': 'application/json',
-    //             //     ...(auth.userSession?.access_token && {
-    //             //         'Authorization': auth.userSession.access_token
-    //             //     }),
-    //             // },
-    //             mode: 'cors',
-    //         })
-    //         .then(r => r.json())
-    //         .then(async r => {
-    //             const clientId = r.data;
-    //             console.log('server assigned client id', clientId);
-    //             this.clientId = clientId;
-    //             const wsProtocol = protocol.includes('s')? 'wss://' : 'ws://';
-    //             this.socket = new WebSocket(wsProtocol + host + '/ws?client_id=' + clientId);
-    //             this.socket.onerror = (e) => reject(e);
-    //             await this.socketListeners();
-    //         })
-    //         .then(resolve)
-    //         .catch(reject);
-    //     });
-    // }
-
-    // async authenticateSocket() {
-    //     return await api.socket.update.authenticate(this.clientId!, auth.user!.id)
-    // }
-
-    // async updateSocketUserId(userId: string) {
-    //     return await api.socket.update.userId(this.clientId!, userId)
-    // }
-
-    restartSocket() {
-        console.log('restarting socket');
-        if (this.socket) {
-            this.socket.close();
-            this.socket = undefined;
+    const listener = (m: MessageEvent) => {
+      try {
+        const data = JSON.parse(m.data);
+        if (data.response_resource === responseChannel) {
+          console.log('Socket response:', data);
+          callback(data);
+          this.socket?.removeEventListener('message', listener);
         }
-        this.registerSocket();
-    }
+      } catch (error) {
+        console.error('Error parsing socket response:', error);
+      }
+    };
+    this.socket.addEventListener('message', listener);
+  }
 
-    async socketListeners() {
-        if (this.socket) {
-            const responseChannel = uuidv4();
-            this.socket.onopen = () => {
-                this.socket!.onmessage = m => {
-                    const message = new IncomingSocketMessage(JSON.parse(m.data))
-                    message.route();
-                }
-            } 
-            this.socket.onerror = e => console.error('socket error', e)
-            this.socket.onclose = () => {
-                this.catalogSynced = false;
-                console.log('socket closed. Attempting to reconnect every 5 seconds.')
-                    const intervalId = setInterval(() => {
-                        this.registerSocket().then(async () => {
-                            console.log('Reconnected successfully. Stopping attempts.');
-                            clearInterval(intervalId);
-                            const artistId = artists.activeArtist?.id;
-                            if (artistId) {
-                                await api.sessions.syncCatalog(artistId);
-                                this.catalogSynced = true;
-                            }
-                        }).catch((error) => {
-                            console.error('Reconnection attempt failed:', error);
-                        });
-                    }, 5000);
-            }
-        } else {
-            console.error('socket is not defined')
-        }
-    }
+  /**
+   * Sends a message that expects a response on a unique channel
+   */
+  async socketMessageWithResponseHandler(
+    channel: string,
+    instruction: string,
+    data: any,
+    callback: (data: any) => void
+  ) {
+    const responseChannel = uuidv4();
+    this.socketResponseListener(responseChannel, (r) => {
+      callback(r.data);
+    });
+    const msg = {
+      channel,
+      instruction,
+      data,
+      response_channel: responseChannel,
+    };
+    this.socket?.send(JSON.stringify(msg));
+    return responseChannel;
+  }
 
-    socketResponseListener(responseChannel: string, callback: (data: any) => void) {
-        if (this.socket) {
-            const listener = this.socket.onmessage = m => {
-                const data = JSON.parse(m.data);
-                if (data.response_resource === responseChannel) {
-                    console.log('socket response', data);
-                    callback(data);
-                    this.socket?.removeEventListener('message', listener);
-                }
-            }
-        } else {
-            console.error('socket is not defined')
-        }
-    }
+  /**
+   * Sends a simple socket message without expecting a specific response
+   */
+  socketMessage(channel: string, instruction?: string, data?: any) {
+    const msg = { channel, instruction, data };
+    this.socket?.send(JSON.stringify(msg));
+  }
 
-    async socketMessageWithResponseHandler(channel: string, instruction: string, data: any, callback: (data: any) => void) {
-        const responseChannel = uuidv4();
-        this.socketResponseListener(responseChannel, r => {
-            callback(r.data);
-        });
-        const msg = { 
-            channel, 
-            instruction, 
-            data, 
-            response_channel: responseChannel 
-        };
-        this.socket?.send(JSON.stringify(msg));
-        return responseChannel;
+  /**
+   * Example method for sending a direct message to a specific user
+   */
+  messageUser(userId: string, text: string) {
+    if (!this.socket) {
+      console.error('Socket is not defined');
+      return;
     }
+    const responseChannel = uuidv4();
+    const data = { channel: 'direct-message', instruction: 'new', data: text };
+    const msg = {
+      channel: 'message',
+      instruction: 'user',
+      data: {
+        receiver_id: userId,
+        message: data,
+      },
+      response_channel: responseChannel,
+    };
+    this.socket.send(JSON.stringify(msg));
+  }
 
-    socketMessage(channel: string, instruction?: string, data?: any) {
-        const msg = { 
-            channel, 
-            instruction, 
-            data, 
-        };
-        this.socket?.send(JSON.stringify(msg));
+  /**
+   * Example method for sending a broadcast message
+   */
+  broadcast(channel: string, instruction: string, data?: any) {
+    if (!this.socket) {
+      console.error('Socket is not defined');
+      return;
     }
-
-    messageUser(userId: string, text: string) {
-        const responseChannel = uuidv4();
-        const data = { channel: 'direct-message', instruction: 'new', data: text };
-        const msg = { 
-            channel: 'message', 
-            instruction: 'user', 
-            data: {
-                receiver_id: userId, 
-                message: data,
-            },
-            response_channel: responseChannel 
-        };
-        this.socket?.send(JSON.stringify(msg));
-    }
-
-    broadcast(channel: string, instruction: string, data?: any) {
-        const responseChannel = uuidv4();
-        const msg = { 
-            channel: 'message', 
-            instruction: 'broadcast', 
-            data: {
-                channel, 
-                instruction, 
-                data,
-            }, 
-            response_channel: responseChannel,
-        };
-        this.socket?.send(JSON.stringify(msg));
-    }
-    
+    const responseChannel = uuidv4();
+    const msg = {
+      channel: 'message',
+      instruction: 'broadcast',
+      data: {
+        channel,
+        instruction,
+        data,
+      },
+      response_channel: responseChannel,
+    };
+    this.socket.send(JSON.stringify(msg));
+  }
 }
-
