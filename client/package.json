@@ -1,7 +1,7 @@
 {
   "name": "blockchain-tools-app-client",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.15",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,13 +10,18 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "uuid": "^11.0.3",
-    "vue": "^3.5.13"
+    "@capacitor-community/http": "^1.4.1",
+    "@capacitor/core": "6.2.0",
+    "@capacitor/device": "^6.0.2",
+    "@capacitor/dialog": "^6.0.2",
+    "uuid": "11.0.4",
+    "vue": "3.5.13"
   },
   "devDependencies": {
+    "@capacitor/cli": "^6.2.0",
     "@vitejs/plugin-vue": "^5.2.1",
     "typescript": "5.7.2",
-    "vite": "6.0.5",
-    "vue-tsc": "^2.1.10"
+    "vite": "6.0.7",
+    "vue-tsc": "2.2.0"
   }
 }

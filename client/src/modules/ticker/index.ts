@@ -16,7 +16,7 @@ export class Ticker {
         this.initializeCoinbaseWebSocket();
     }
 
-    initializeCoinbaseWebSocket() {
+    async initializeCoinbaseWebSocket() {
         const ws = new WebSocket('wss://ws-feed.exchange.coinbase.com');
 
         ws.onopen = () => {
@@ -42,11 +42,22 @@ export class Ticker {
                         ticker.prices['ETH'] = parseFloat(price);
                         break;
                     case 'SOL-USD':
-                        ticker.prices['SOL'] = parseFloat(price);
+                        ticker.prices['SOL'] = price;
                         break;
                 }
             }
         };
-        
+
+        ws.onclose = () => {
+            console.log('socket closed. Attempting to reconnect every 5 seconds.')
+                const intervalId = setInterval(() => {
+                    this.initializeCoinbaseWebSocket().then(async () => {
+                        console.log('Reconnected successfully. Stopping attempts.');
+                        clearInterval(intervalId);
+                    }).catch((error) => {
+                        console.error('Reconnection attempt failed:', error);
+                    });
+                }, 5000);
+        }
     }
 }

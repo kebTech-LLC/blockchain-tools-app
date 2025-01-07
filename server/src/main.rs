@@ -1,14 +1,15 @@
 use std::{env, sync::Arc, thread};
 use centralized_marketplaces::coinbase::Coinbase;
 use cnctd_server::{
-    server::{CnctdServer, ServerConfig},
-    socket::SocketConfig,
+    router::message::Message, server::{CnctdServer, ServerConfig}, socket::SocketConfig
 };
 use local_ip_address::local_ip;
 use router::{rest::RestRouter, socket::SocketRouter};
-use solana::{pool_manager::PoolManager, wallet::Wallet};
+use serde_json::json;
+use solana::{pool_manager::{managed_positions::ManagedPosition, PoolManager}, wallet::Wallet};
 use solana_pools::SolanaPools;
 use solana_sdk::signer::Signer;
+use tokio::sync::mpsc;
 // use session::client_session::ClientSession;
 
 pub mod router;
@@ -89,35 +90,62 @@ async fn main() {
     let wallet = Wallet::get_public_key().await.unwrap();
     // PoolManager::get_orca_positions_for_wallet("312yxT6PFcauztXCfG5jNqcRXqMDCm9HeLBJwbaHL6kH").await.expect("Failed to get Orca positions for wallet");
 
-    tokio::spawn(async {
+    // Create the channel
+    let (tx, rx) = mpsc::channel::<ManagedPosition>(100);
+
+    // Prepare a future for the server
+    let server_future = async {
+        if let Err(e) = CnctdServer::start(server_config, Some(socket_config)).await {
+            println!("Server error: {:?}", e);
+        } else {
+            println!("Server started successfully.");
+        }
+    };
+
+    // Prepare a future for the PoolManager
+    // We pass in `tx.clone()` so we can continue sending even if we retry.
+    let pool_manager_future = async move {
         loop {
-            match PoolManager::start("312yxT6PFcauztXCfG5jNqcRXqMDCm9HeLBJwbaHL6kH").await {
-                Ok(_) => break,
+            match PoolManager::start(
+                "312yxT6PFcauztXCfG5jNqcRXqMDCm9HeLBJwbaHL6kH",
+                tx.clone()
+            ).await {
+                Ok(_) => {
+                    println!("PoolManager exited successfully.");
+                    // If PoolManager::start() ever returns Ok, we break.
+                    break;
+                }
                 Err(e) => {
                     println!("Failed to start PoolManager: {:?}. Retrying in 30 seconds...", e);
                     tokio::time::sleep(tokio::time::Duration::from_secs(30)).await;
                 }
             }
         }
-    });
+    };
 
-    let coinbase = Coinbase::new(
-        "wss://ws-feed.exchange.coinbase.com",
-        vec!["SOL-USD"],
-        vec!["ticker"],
-    );
+    // Prepare a future to receive data from the channel
+    let rx_future = async move {
+        let mut rx = rx;  // make rx mut in this scope
+        while let Some(managed_position) = rx.recv().await {
+            println!("Received a new ManagedPosition: {:?}", managed_position);
 
-    // Use tokio::spawn to manage the WebSocket connection
-    // tokio::spawn(async move {
-    //     coinbase.connect_and_subscribe().await;
-    // });
-    
-   
+            let message = Message::new("managed-position", "update", Some(json!(managed_position)));
+            match message.broadcast().await {
+                Ok(_) => println!("Broadcasted managed position successfully."),
+                Err(e) => println!("Failed to broadcast managed position: {:?}", e),
+            }
+        }
+    };
 
-    // Start the server
-    if let Err(e) = CnctdServer::start(server_config, Some(socket_config)).await {
-        println!("Server error: {:?}", e);
-    } else {
-        println!("Server started successfully.");
+    // Now run all three tasks concurrently:
+    // - The server will keep running until it returns or errors.
+    // - The PoolManager will keep retrying in a loop.
+    // - The receiver loop will keep reading until `tx` is dropped.
+    tokio::select! {
+        _ = server_future => (),
+        _ = pool_manager_future => (),
+        _ = rx_future => (),
     }
+
+    println!("All tasks have finished, shutting down main.");
 }

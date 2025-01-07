@@ -1,5 +1,5 @@
 use crate::router::resources::{
-    new_resource::route_new_resource, public_key::route_public_key,
+    new_resource::route_new_resource, public_key::route_public_key, sessions::route_sessions,
   
 };
 use std::{future::Future, pin::Pin};
@@ -12,6 +12,37 @@ use anyhow::anyhow;
 use uuid::Uuid;
 
 pub static JWT_SECRET: InitCell<Vec<u8>> = InitCell::new();
+
+#[derive(Debug)]
+pub enum Resource {
+    NewResource,
+    PublicKey,
+    Sessions,
+    Unrecognized,
+}
+
+impl Resource {
+    pub fn from_str(s: &str) -> Self {
+        match s {
+            "new_resource" => Resource::NewResource,
+            "public_key" => Resource::PublicKey,
+            "sessions" => Resource::Sessions,
+            _ => Resource::Unrecognized,
+        }
+    }
+
+    pub fn authenticate(auth_token: Option<String>) -> anyhow::Result<Uuid> {
+        let secret = JWT_SECRET.try_get().ok_or(anyhow!("JWT secret not set"))?;
+        match auth_token {
+            Some(jwt) => {
+                let user_id = CnctdAuth::verify_auth_token(secret.to_owned(), &jwt)?;
+                Ok(Uuid::parse_str(&user_id)?)
+            }
+            None => return Err(anyhow!("auth token required"))
+        }
+    }
+}
+
 
 #[derive(Clone, Copy)]
 pub struct RestRouter;
@@ -50,40 +81,15 @@ async fn route(method: HttpMethod, path: String, data: Value, auth_token: Option
         Resource::PublicKey => {
             Ok(route_public_key(method, operation, data, auth_token, None).await?)
         }
+        Resource::Sessions => {
+            Ok(route_sessions(method, operation, data, auth_token, client_id, ip_address).await?)
+        }
         _ => {
             let response = ErrorResponse::new(
                 Some(ErrorCode::NotFound),
                 Some("Unrecognized resource".into()),
             );
             Err(response)
-        }
-    }
-}
-
-#[derive(Debug)]
-pub enum Resource {
-    NewResource,
-    PublicKey,
-    Unrecognized,
-}
-
-impl Resource {
-    pub fn from_str(s: &str) -> Self {
-        match s {
-            "new_resource" => Resource::NewResource,
-            "public_key" => Resource::PublicKey,
-            _ => Resource::Unrecognized,
-        }
-    }
-
-    pub fn authenticate(auth_token: Option<String>) -> anyhow::Result<Uuid> {
-        let secret = JWT_SECRET.try_get().ok_or(anyhow!("JWT secret not set"))?;
-        match auth_token {
-            Some(jwt) => {
-                let user_id = CnctdAuth::verify_auth_token(secret.to_owned(), &jwt)?;
-                Ok(Uuid::parse_str(&user_id)?)
-            }
-            None => return Err(anyhow!("auth token required"))
         }
     }
 }
