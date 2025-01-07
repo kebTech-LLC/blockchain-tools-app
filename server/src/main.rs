@@ -116,7 +116,7 @@ async fn main() {
                     break;
                 }
                 Err(e) => {
-                    println!("Failed to start PoolManager: {:?}. Retrying in 30 seconds...", e);
+                    println!("PoolManager Error: {:?}. Retrying in 30 seconds...", e);
                     tokio::time::sleep(tokio::time::Duration::from_secs(30)).await;
                 }
             }
