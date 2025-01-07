@@ -90,7 +90,15 @@ async fn main() {
     // PoolManager::get_orca_positions_for_wallet("312yxT6PFcauztXCfG5jNqcRXqMDCm9HeLBJwbaHL6kH").await.expect("Failed to get Orca positions for wallet");
 
     tokio::spawn(async {
-        PoolManager::start("312yxT6PFcauztXCfG5jNqcRXqMDCm9HeLBJwbaHL6kH").await.expect("Failed to start PoolManager");
+        loop {
+            match PoolManager::start("312yxT6PFcauztXCfG5jNqcRXqMDCm9HeLBJwbaHL6kH").await {
+                Ok(_) => break,
+                Err(e) => {
+                    println!("Failed to start PoolManager: {:?}. Retrying in 30 seconds...", e);
+                    tokio::time::sleep(tokio::time::Duration::from_secs(30)).await;
+                }
+            }
+        }
     });
 
     let coinbase = Coinbase::new(
