@@ -1,8 +1,10 @@
 <template>
 	<Ticker />
+	<LiquidityPools />
 </template>
 
 <script lang="ts">
+import LiquidityPools from './components/LiquidityPools/LiquidityPools.vue';
 import Ticker from './components/Ticker.vue';
 import { launcher } from './modules';
 
@@ -15,7 +17,8 @@ export default {
 		}
 	},
 	components: {
-		Ticker
+		Ticker,
+		LiquidityPools
 	}
 }
 </script>

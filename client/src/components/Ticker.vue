@@ -33,15 +33,18 @@ export default defineComponent({
 <style scoped>
 .ticker {
     display: flex;
-    justify-content: center;
+    justify-content: space-around;
     align-items: center;
-    flex-direction: column;
-    height: 100%;
+    width: 100%;
     font-size: 1.5rem;
     font-weight: bold;
+
 }
 .price {
-    display: flex;
-    gap: 0.5rem;
+    width: 100%;
+    text-align: center;
+}
+.label {
+    margin-right: 0.5rem;
 }
 </style>

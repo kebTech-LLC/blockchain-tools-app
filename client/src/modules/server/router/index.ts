@@ -1,4 +1,5 @@
-import { server } from "@/modules";
+import { liquidityPools, server } from "@/modules";
+import { ManagedPosition } from "@/modules/liquidity-pools/managed-position";
 
 export class IncomingSocketMessage {
     channel: string;
@@ -41,6 +42,19 @@ export class IncomingSocketMessage {
                 }
                 break;
 
+            case 'managed-position':
+                switch(this.instruction) {
+                    case 'update':
+                        const managedPosition = new ManagedPosition(this.data);
+                        const existingPosition = liquidityPools.managedPositions.find(position => position.address === managedPosition.address);
+                        if (existingPosition) {
+                            Object.assign(existingPosition, managedPosition);
+                        } else {
+                            liquidityPools.managedPositions.push(managedPosition);
+                        }
+                        break;
+                }
+                break;
             default:
                 console.log('no route for channel', this.channel);
         }
