@@ -125,7 +125,7 @@ export class Server {
     
 
     registerSocket(): Promise<void> {
-        console.log('registering socket')
+        console.log('Registering application socket');
         return new Promise((ok, err) => {
             api.sessions.register()
                 .then(async clientId => {
@@ -190,7 +190,7 @@ export class Server {
     // }
 
     restartSocket() {
-        console.log('restarting socket');
+        console.log('Restarting application socket');
         if (this.socket) {
             this.socket.close();
             this.socket = undefined;

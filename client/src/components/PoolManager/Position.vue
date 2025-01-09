@@ -4,8 +4,8 @@
         <div class="name">{{ position.tokenA.symbol + '/' +  position.tokenB.symbol }}</div>
         <div class="current-price">{{ position.tickerPrice }}</div>
         <div class="range">
-            <div class="lower">{{ position.rangeLower.toFixed(2) }}</div>
-            <div class="upper">{{ position.rangeUpper.toFixed(2) }}</div>
+            <div class="lower">{{ position.rangeLower }}</div>
+            <div class="upper">{{ position.rangeUpper }}</div>
         </div>
         <div class="balance">
             <div class="token-a">{{ position.balanceTokenAUsd.toFixed(2) }}</div>
@@ -22,7 +22,7 @@
 
 <script lang="ts">
 import { ticker } from '@/modules';
-import { ManagedPosition } from '@/modules/liquidity-pools/managed-position';
+import { ManagedPosition } from '@/modules/pool-manager/managed-position';
 import { defineComponent } from 'vue'
 
 export default defineComponent({

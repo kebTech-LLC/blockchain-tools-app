@@ -1,5 +1,5 @@
 import { ManagedPosition } from "./managed-position";
 
-export class LiquidityPools {
+export class PoolManager {
     managedPositions: ManagedPosition[] = [];
 }

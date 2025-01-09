@@ -36,23 +36,23 @@ export class Ticker {
 
                 switch (product_id) {
                     case 'BTC-USD':
-                        ticker.prices['BTC'] = parseFloat(price);
+                        ticker.prices['BTC'] = parseFloat(parseFloat(price).toFixed(2));
                         break;
                     case 'ETH-USD':
-                        ticker.prices['ETH'] = parseFloat(price);
+                        ticker.prices['ETH'] = parseFloat(parseFloat(price).toFixed(2));
                         break;
                     case 'SOL-USD':
-                        ticker.prices['SOL'] = price;
+                        ticker.prices['SOL'] = parseFloat(parseFloat(price).toFixed(2));
                         break;
                 }
             }
         };
 
         ws.onclose = () => {
-            console.log('socket closed. Attempting to reconnect every 5 seconds.')
+            console.log('Coinbase socket closed. Attempting to reconnect every 5 seconds.')
                 const intervalId = setInterval(() => {
                     this.initializeCoinbaseWebSocket().then(async () => {
-                        console.log('Reconnected successfully. Stopping attempts.');
+                        console.log('Coinbase socket reconnected successfully. Stopping attempts.');
                         clearInterval(intervalId);
                     }).catch((error) => {
                         console.error('Reconnection attempt failed:', error);

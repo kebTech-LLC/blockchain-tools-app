@@ -1,5 +1,5 @@
-import { liquidityPools, server } from "@/modules";
-import { ManagedPosition } from "@/modules/liquidity-pools/managed-position";
+import { poolManager, server } from "@/modules";
+import { ManagedPosition } from "@/modules/pool-manager/managed-position";
 
 export class IncomingSocketMessage {
     channel: string;
@@ -46,11 +46,17 @@ export class IncomingSocketMessage {
                 switch(this.instruction) {
                     case 'update':
                         const managedPosition = new ManagedPosition(this.data);
-                        const existingPosition = liquidityPools.managedPositions.find(position => position.address === managedPosition.address);
+                        const existingPosition = poolManager.managedPositions.find(position => position.address === managedPosition.address);
                         if (existingPosition) {
                             Object.assign(existingPosition, managedPosition);
                         } else {
-                            liquidityPools.managedPositions.push(managedPosition);
+                            poolManager.managedPositions.push(managedPosition);
+                        }
+                        break;
+                    case 'remove':
+                        const index = poolManager.managedPositions.findIndex(position => position.address === this.data.address);
+                        if (index !== -1) {
+                            poolManager.managedPositions.splice(index, 1);
                         }
                         break;
                 }

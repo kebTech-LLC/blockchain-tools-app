@@ -6,7 +6,7 @@ use cnctd_server::{
 use local_ip_address::local_ip;
 use router::{rest::RestRouter, socket::SocketRouter};
 use serde_json::json;
-use solana::{pool_manager::{managed_positions::ManagedPosition, PoolManager}, wallet::Wallet};
+use solana::{pool_manager::{managed_positions::ManagedPosition, message::{MessageType, PoolManagerMessage}, PoolManager}, wallet::Wallet};
 use solana_pools::SolanaPools;
 use solana_sdk::signer::Signer;
 use tokio::sync::mpsc;
@@ -91,7 +91,7 @@ async fn main() {
     // PoolManager::get_orca_positions_for_wallet("312yxT6PFcauztXCfG5jNqcRXqMDCm9HeLBJwbaHL6kH").await.expect("Failed to get Orca positions for wallet");
 
     // Create the channel
-    let (tx, rx) = mpsc::channel::<ManagedPosition>(100);
+    let (tx, rx) = mpsc::channel::<PoolManagerMessage>(100);
 
     // Prepare a future for the server
     let server_future = async {
@@ -126,10 +126,15 @@ async fn main() {
     // Prepare a future to receive data from the channel
     let rx_future = async move {
         let mut rx = rx;  // make rx mut in this scope
-        while let Some(managed_position) = rx.recv().await {
-            println!("Received a new ManagedPosition: {:?}", managed_position);
+        while let Some(pool_manager_message) = rx.recv().await {
+            println!("Received a new PoolManagerMessage: {:?}", pool_manager_message);
 
-            let message = Message::new("managed-position", "update", Some(json!(managed_position)));
+            let (channel, instruction) = match pool_manager_message.message_type {
+                MessageType::UpdatePosition => ("managed-position", "update"),
+                MessageType::RemovePosition => ("managed-position", "remove"),
+            };
+
+            let message = Message::new(channel, instruction, Some(json!(pool_manager_message.data)));
             match message.broadcast().await {
                 Ok(_) => println!("Broadcasted managed position successfully."),
                 Err(e) => println!("Failed to broadcast managed position: {:?}", e),

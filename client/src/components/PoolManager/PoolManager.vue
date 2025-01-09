@@ -1,7 +1,7 @@
 <template>
     <div id="liquidity-pools">
         <div class="positions">
-            <Position v-for="position in liquidityPools.managedPositions" :key="position.address" :position="position" />
+            <Position v-for="position in poolManager.managedPositions" :key="position.address" :position="position" />
         </div>
     </div>
 </template>
@@ -9,14 +9,14 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import Position from './Position.vue';
-import { liquidityPools } from '@/modules';
+import { poolManager } from '@/modules';
 
 export default defineComponent({
     setup () {
         
 
         return {
-            liquidityPools
+            poolManager
         }
     },
     components: {

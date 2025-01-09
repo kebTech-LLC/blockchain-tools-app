@@ -64,7 +64,7 @@ impl Coinbase {
         while let Some(Ok(msg)) = read.next().await {
             if let Message::Text(text) = msg {
                 println!("Received: {}", text);
-                PoolManager::test_orca_ipc().await.expect("Failed to test Orca IPC");
+                // PoolManager::test_orca_ipc().await.expect("Failed to test Orca IPC");
             }
         }
     }
