@@ -1,11 +1,13 @@
 <template>
 	<Ticker />
+	<WalletManager />
 	<PoolManager />
 </template>
 
 <script lang="ts">
 import PoolManager from './components/PoolManager/PoolManager.vue';
 import Ticker from './components/Ticker.vue';
+import WalletManager from './components/Wallets/WalletManager.vue';
 import { launcher } from './modules';
 
 export default {
@@ -18,7 +20,8 @@ export default {
 	},
 	components: {
 		Ticker,
-		PoolManager
+		PoolManager,
+		WalletManager
 	}
 }
 </script>

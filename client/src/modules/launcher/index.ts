@@ -1,5 +1,5 @@
 
-import { server } from "@/modules";
+import { poolManager, server } from "@/modules";
 // import * as state from "@/state";
 import { reactive, watchEffect } from "vue";
 
@@ -40,7 +40,7 @@ export class Launcher {
 
         await server.registerSocket();
         console.log('socket registered from launcher');
-
+        await poolManager.populateOrcaPools();
         // if (state.visitor.shareId) {
         //     console.log('share link detected');
         //     state.views.splashScreen = true;

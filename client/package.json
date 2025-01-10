@@ -1,7 +1,7 @@
 {
   "name": "blockchain-tools-app-client",
   "private": true,
-  "version": "0.0.78",
+  "version": "0.0.144",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -14,6 +14,9 @@
     "@capacitor/core": "6.2.0",
     "@capacitor/device": "^6.0.2",
     "@capacitor/dialog": "^6.0.2",
+    "@solana/wallet-adapter-base": "^0.9.23",
+    "@solana/wallet-adapter-wallets": "^0.19.32",
+    "@solana/web3.js": "^1.98.0",
     "uuid": "11.0.4",
     "vue": "3.5.13"
   },

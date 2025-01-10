@@ -1,8 +1,9 @@
 import { v4 as uuidv4 } from 'uuid';
 // import { visitor } from '@/state'
 import { IncomingSocketMessage } from './router';
-import api from '@/api';
+import api from './api';
 import { Http } from '@capacitor-community/http';
+import { poolManager } from '..';
 
 
 const host = location.host;
@@ -47,7 +48,6 @@ export class Server {
     socket: WebSocket | undefined;
     clientId: string | undefined;
     info: ServerInfo | undefined;
-    catalogSynced: boolean = false;
 
     constructor() {
         this.socketListeners.bind(this);
@@ -125,6 +125,7 @@ export class Server {
     
 
     registerSocket(): Promise<void> {
+        poolManager.populateManagedPositions();
         console.log('Registering application socket');
         return new Promise((ok, err) => {
             api.sessions.register()
@@ -209,7 +210,6 @@ export class Server {
             } 
             this.socket.onerror = e => console.error('socket error', e)
             this.socket.onclose = () => {
-                this.catalogSynced = false;
                 console.log('socket closed. Attempting to reconnect every 5 seconds.')
                     const intervalId = setInterval(() => {
                         this.registerSocket().then(async () => {
