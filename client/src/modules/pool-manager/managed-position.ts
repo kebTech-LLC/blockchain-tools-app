@@ -91,5 +91,25 @@ export class ManagedPosition {
     get tickerInRange() {
         return this.tickerPrice >= this.rangeLower && this.tickerPrice <= this.rangeUpper;
     }
+
+    get estimated24hYield() {
+        const timeElapsedMs = this.updatedAt.getTime() - this.createdAt.getTime();
+        const timeElapsedHours = timeElapsedMs / (1000 * 60 * 60);
+    
+        // If yield or elapsed time is 0 or negative, return 0
+        if (this.yieldTotalUsd <= 0 || timeElapsedHours <= 0) {
+            return 0;
+        }
+    
+        // Calculate hourly yield percentage
+        const hourlyReturnPercentage = (this.yieldTotalUsd / this.balanceTotalUsd) * 100 / timeElapsedHours;
+    
+        // Scale it to a 24-hour period
+        return hourlyReturnPercentage * 24;
+    }
+
+    get estimated24hYieldUsd() {
+        return this.balanceTotalUsd * this.estimated24hYield / 100;
+    }
 }
   

@@ -5,7 +5,7 @@ type RewardInfo = {
     emissions_per_second_x64: string;
     growth_global_x64: string;
 };
-  
+
 type TokenInfo = {
     address: string;
     programId: string;
@@ -15,7 +15,7 @@ type TokenInfo = {
     decimals: number;
     tags: string[];
 };
-  
+
 export class OrcaPool {
     address: string;
     whirlpoolsConfig: string;
@@ -24,11 +24,11 @@ export class OrcaPool {
     tickSpacingSeed: number[];
     feeRate: number;
     protocolFeeRate: number;
-    liquidity: string;
-    sqrtPrice: string;
+    liquidity: number;
+    sqrtPrice: number;
     tickCurrentIndex: number;
-    protocolFeeOwedA: string;
-    protocolFeeOwedB: string;
+    protocolFeeOwedA: number;
+    protocolFeeOwedB: number;
     tokenMintA: string;
     tokenVaultA: string;
     feeGrowthGlobalA: string;
@@ -41,39 +41,52 @@ export class OrcaPool {
     writeVersion: number;
     risk: number;
     hasRewards: boolean;
-    price: string;
-    rewardsUsdc24h: string;
-    rewardsUsdc7d: string;
-    rewardsUsdc30d: string;
-    volumeUsdc24h: string;
-    volumeUsdc7d: string;
-    volumeUsdc30d: string;
-    tvlUsdc: string;
-    feesUsdc24h: string;
-    feesUsdc7d: string;
-    feesUsdc30d: string;
-    yieldOverTvl: string;
+    price: number;
+    rewardsUsdc24h: number;
+    rewardsUsdc7d: number;
+    rewardsUsdc30d: number;
+    volumeUsdc24h: number;
+    volumeUsdc7d: number;
+    volumeUsdc30d: number;
+    tvlUsdc: number;
+    feesUsdc24h: number;
+    feesUsdc7d: number;
+    feesUsdc30d: number;
+    yieldOverTvl: number;
     rewards: RewardInfo[];
     tokenA: TokenInfo;
     tokenB: TokenInfo;
-  
-    constructor(data: Partial<OrcaPool>) {
-      Object.assign(this, data);
+
+    constructor(data: any) {
+        Object.assign(this, data);
+
+        this.liquidity = parseFloat(data.liquidity || '0');
+        this.sqrtPrice = parseFloat(data.sqrtPrice || '0');
+        this.protocolFeeOwedA = parseFloat(data.protocolFeeOwedA || '0');
+        this.protocolFeeOwedB = parseFloat(data.protocolFeeOwedB || '0');
+        this.price = parseFloat(data.price || '0');
+        this.rewardsUsdc24h = parseFloat(data.rewardsUsdc24h || '0');
+        this.rewardsUsdc7d = parseFloat(data.rewardsUsdc7d || '0');
+        this.rewardsUsdc30d = parseFloat(data.rewardsUsdc30d || '0');
+        this.volumeUsdc24h = parseFloat(data.volumeUsdc24h || '0');
+        this.volumeUsdc7d = parseFloat(data.volumeUsdc7d || '0');
+        this.volumeUsdc30d = parseFloat(data.volumeUsdc30d || '0');
+        this.tvlUsdc = parseFloat(data.tvlUsdc || '0');
+        this.feesUsdc24h = parseFloat(data.feesUsdc24h || '0');
+        this.feesUsdc7d = parseFloat(data.feesUsdc7d || '0');
+        this.feesUsdc30d = parseFloat(data.feesUsdc30d || '0');
+        this.yieldOverTvl = parseFloat(data.yieldOverTvl || '0');
     }
-  
-    // Add any helper methods if needed
+
     getLiquidity(): number {
-      return parseFloat(this.liquidity);
+        return this.liquidity;
     }
-  
+
     getPrice(): number {
-      return parseFloat(this.price);
+        return this.price;
     }
-  
+
     getTvlInUsd(): number {
-      return parseFloat(this.tvlUsdc);
+        return this.tvlUsdc;
     }
-
-
 }
-  

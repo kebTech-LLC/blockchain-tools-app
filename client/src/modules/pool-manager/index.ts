@@ -1,12 +1,16 @@
 import api from "../server/api";
 import { ManagedPosition } from "./managed-position";
+import { OrcaPool } from "./orca-pool";
 
 export class PoolManager {
     managedPositions: ManagedPosition[] = [];
     orcaPools: any[] = [];
 
     async populateOrcaPools(limit?: number) {
-        this.orcaPools = await api.poolManager.get.orcaPools(limit);
+        const orcaPools = await api.poolManager.get.orcaPools(limit);
+        this.orcaPools.length = 0;
+        this.orcaPools = orcaPools.map((pool: any) => new OrcaPool(pool));
+        
     }
 
     async populateManagedPositions() {

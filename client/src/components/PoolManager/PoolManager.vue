@@ -1,31 +1,34 @@
 <template>
     <div id="pool-managers">
         <div class="positions">
-            <Position v-for="position in poolManager.managedPositions" :key="position.address" :position="position" />
+            <ManagedPosition v-for="position in poolManager.managedPositions" :key="position.address" :position="position" />
         </div>
         <div class="pools">
-            <OrcaPool v-for="pool in poolManager.orcaPools" :key="pool.address" :pool="pool" />
+            <OrcaPool v-for="pool in poolManager.orcaPools" :key="pool.address" :pool="pool" @new="" />
         </div>
+        <!-- <NewPosition /> -->
     </div>
 </template>
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import Position from './Position.vue';
+import ManagedPosition from './ManagedPosition.vue';
 import { poolManager } from '@/modules';
 import OrcaPool from './OrcaPool.vue';
+import NewPosition from './NewPosition.vue';
 
 export default defineComponent({
     setup () {
-        
+
 
         return {
             poolManager
         }
     },
     components: {
-        Position,
-        OrcaPool
+        ManagedPosition,
+        OrcaPool,
+        NewPosition,
     }
 })
 </script>
