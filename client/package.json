@@ -1,7 +1,7 @@
 {
   "name": "blockchain-tools-app-client",
   "private": true,
-  "version": "0.0.246",
+  "version": "0.0.435",
   "type": "module",
   "scripts": {
     "dev": "vite",

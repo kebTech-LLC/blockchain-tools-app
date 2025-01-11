@@ -45,19 +45,13 @@ export class IncomingSocketMessage {
             case 'managed-position':
                 switch(this.instruction) {
                     case 'update':
-                        const managedPosition = new ManagedPosition(this.data);
-                        const existingPosition = poolManager.managedPositions.find(position => position.address === managedPosition.address);
-                        if (existingPosition) {
-                            Object.assign(existingPosition, managedPosition);
-                        } else {
-                            poolManager.managedPositions.push(managedPosition);
-                        }
+                        const managedPosition = new ManagedPosition(this.data.data);
+                        poolManager.updateTimer.frequency = this.data.frequency;
+                        poolManager.updateManagedPositions([managedPosition]);
                         break;
                     case 'remove':
-                        const index = poolManager.managedPositions.findIndex(position => position.address === this.data.address);
-                        if (index !== -1) {
-                            poolManager.managedPositions.splice(index, 1);
-                        }
+                        const removedPosition = new ManagedPosition(this.data.data);
+                        poolManager.removeManagedPositions([removedPosition]);
                         break;
                 }
                 break;

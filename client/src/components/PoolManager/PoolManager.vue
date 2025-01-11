@@ -2,11 +2,12 @@
     <div id="pool-managers">
         <div class="positions">
             <ManagedPosition v-for="position in poolManager.managedPositions" :key="position.address" :position="position" />
+            <NewPosition v-if="poolManager.newPosition" />
         </div>
         <div class="pools">
             <OrcaPool v-for="pool in poolManager.orcaPools" :key="pool.address" :pool="pool" @new="" />
         </div>
-        <!-- <NewPosition /> -->
+        
     </div>
 </template>
 
@@ -43,8 +44,9 @@ export default defineComponent({
 .positions {
     display: flex;
     gap: 1rem;
-    width: 100%;
     padding: 1rem;
+    position: relative;
+    overflow: scroll;
 }
 .pools {
     display: flex;

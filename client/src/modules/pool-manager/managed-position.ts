@@ -1,4 +1,5 @@
 import { ticker } from "..";
+import api from "../server/api";
 
 export class ManagedPosition {
     address: string;
@@ -34,11 +35,13 @@ export class ManagedPosition {
         symbol: string;
     };
     updatedAt: Date;
+    walletKey: string;
     yieldTokenA: number;
     yieldTokenAUsd: number;
     yieldTokenB: number;
     yieldTokenBUsd: number;
     yieldTotalUsd: number;
+
   
     constructor(data: any) {
         this.address = data.address;
@@ -77,6 +80,7 @@ export class ManagedPosition {
             symbol: data.token_b.symbol,
         };
         this.updatedAt = new Date(data.updated_at);
+        this.walletKey = data.wallet_key;
         this.yieldTokenA = data.yield_token_a;
         this.yieldTokenAUsd = data.yield_token_a_usd;
         this.yieldTokenB = data.yield_token_b;
@@ -110,6 +114,11 @@ export class ManagedPosition {
 
     get estimated24hYieldUsd() {
         return this.balanceTotalUsd * this.estimated24hYield / 100;
+    }
+
+    async close() {
+        await api.poolManager.closePosition(this);
+        console.log('closed position', this);
     }
 }
   

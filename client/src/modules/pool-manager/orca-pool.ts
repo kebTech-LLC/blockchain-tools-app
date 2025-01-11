@@ -1,3 +1,6 @@
+import NewPosition from "@/components/PoolManager/NewPosition.vue";
+import { poolManager, ticker } from "..";
+
 type RewardInfo = {
     mint: string;
     vault: string;
@@ -6,7 +9,7 @@ type RewardInfo = {
     growth_global_x64: string;
 };
 
-type TokenInfo = {
+class TokenInfo {
     address: string;
     programId: string;
     imageUrl: string;
@@ -14,7 +17,29 @@ type TokenInfo = {
     symbol: string;
     decimals: number;
     tags: string[];
-};
+
+    constructor(data: any) {
+        Object.assign(this, data);
+    }
+
+    get isStablecoin() {
+        return ["USDC", "USDT", "DAI", "USDH", "UXD", "PAI"].includes(this.symbol);
+    }
+}
+
+// type TokenInfo = {
+//     address: string;
+//     programId: string;
+//     imageUrl: string;
+//     name: string;
+//     symbol: string;
+//     decimals: number;
+//     tags: string[];
+
+//     get isStablecoin() {
+//         return this.tags.includes('stablecoin');
+//     }
+// };
 
 export class OrcaPool {
     address: string;
@@ -76,17 +101,16 @@ export class OrcaPool {
         this.feesUsdc7d = parseFloat(data.feesUsdc7d || '0');
         this.feesUsdc30d = parseFloat(data.feesUsdc30d || '0');
         this.yieldOverTvl = parseFloat(data.yieldOverTvl || '0');
+        this.tokenA = new TokenInfo(data.tokenA);
+        this.tokenB = new TokenInfo(data.tokenB);
     }
 
-    getLiquidity(): number {
-        return this.liquidity;
+    get name() {
+        return `${this.tokenA.symbol}/${this.tokenB.symbol}`;
     }
 
-    getPrice(): number {
-        return this.price;
+    get tickerPrice() {
+        return ticker.prices[this.tokenA.symbol] && this.tokenB.isStablecoin ? ticker.prices[this.tokenA.symbol] : this.price;
     }
 
-    getTvlInUsd(): number {
-        return this.tvlUsdc;
-    }
 }

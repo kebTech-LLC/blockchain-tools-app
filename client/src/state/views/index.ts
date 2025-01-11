@@ -1,15 +1,5 @@
-class FloatingMenu {
-    items: {
-        label: string,
-        icon: string | null,
-        action: () => void,
-    }[];
-    top: number | null;
-    left: number | null;
-}
+import { FloatingMenu } from "./floating-menu";
 
 export class Views {
-    floatingMenu: FloatingMenu = new FloatingMenu();
-
-    
+    floatingMenu = null as FloatingMenu | null;
 }

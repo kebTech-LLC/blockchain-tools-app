@@ -7,12 +7,12 @@ impl SolanaPools {
         Ok(())
     }
 
-    pub async fn get_sol_balance() -> anyhow::Result<f64> {
-        let balance = Wallet::get_sol_balance().await?;
+    // pub async fn get_sol_balance() -> anyhow::Result<f64> {
+    //     let balance = Wallet::get_sol_balance().await?;
 
-        println!("SOL balance: {}", balance);
+    //     println!("SOL balance: {}", balance);
 
-        Ok(balance)
-    }
+    //     Ok(balance)
+    // }
     
 }

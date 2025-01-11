@@ -1,5 +1,6 @@
 import { server } from "@/modules"
 import { ManagedPosition } from "@/modules/pool-manager/managed-position"
+import { NewPosition } from "@/modules/pool-manager/new-position"
 import { OrcaPool } from "@/modules/pool-manager/orca-pool"
 
 const resource = 'pool_manager'
@@ -25,5 +26,42 @@ export default {
                     })
             })
         }
+    },
+    openPosition: (position: NewPosition): Promise<any> => {
+        return new Promise((ok, err) => {
+            server.post(resource, 'open-position', position)
+                .then(r => ok(r.data))
+                .catch(e => err(e))
+        })
+    },
+    closePosition: (position: ManagedPosition): Promise<any> => {
+        return new Promise((ok, err) => {
+            server.put(resource, 'close-position', position)
+                .then(r => ok(r.data))
+                .catch(e => err(e))
+        })
+    },
+    connectBrowserWallet: (walletKey: string): Promise<ManagedPosition[]> => {
+        console.log('connecting wallet', walletKey)
+        return new Promise((ok, err) => {
+            server.put(resource, 'connect-browser-wallet', { wallet_key: walletKey})
+                .then(r => {
+                    const managedPositions = r.data.map((position: any) => new ManagedPosition(position));
+                    console.log('connected wallet', managedPositions)
+                    ok(managedPositions)
+                })
+                .catch(e => err(e))
+        })
+    },
+    disconnectBrowserWallet: (): Promise<ManagedPosition[]> => {
+        return new Promise((ok, err) => {
+            server.put(resource, 'disconnect-browser-wallet', {})
+                .then(r => {
+                    const removedPositions = r.data.map((position: any) => new ManagedPosition(position));
+                    console.log('disconnected wallet', removedPositions)
+                    ok(removedPositions)
+                })
+                .catch(e => err(e))
+        })
     }
 }

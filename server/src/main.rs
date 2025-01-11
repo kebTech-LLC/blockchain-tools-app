@@ -6,9 +6,7 @@ use cnctd_server::{
 use local_ip_address::local_ip;
 use router::{rest::RestRouter, socket::SocketRouter};
 use serde_json::json;
-use solana::{pool_manager::{managed_positions::ManagedPosition, message::{MessageType, PoolManagerMessage}, PoolManager}, wallet::Wallet};
-use solana_pools::SolanaPools;
-use solana_sdk::signer::Signer;
+use solana::pool_manager::{message::{MessageType, PoolManagerMessage}, PoolManager};
 use tokio::sync::mpsc;
 // use session::client_session::ClientSession;
 
@@ -35,7 +33,7 @@ async fn main() {
     let socket_router = SocketRouter;
 
     // Allowed origins for CORS
-    let ip_address = local_ip().map(|ip| ip.to_string()).unwrap_or_else(|_| "127.0.0.1".to_string());
+    // let ip_address = local_ip().map(|ip| ip.to_string()).unwrap_or_else(|_| "127.0.0.1".to_string());
     // let allowed_origins = vec![
     //     "http://localhost:3000".to_string(),
     //     "https://example.com".to_string(),
@@ -87,7 +85,6 @@ async fn main() {
     // SolanaPools::get_sol_balance().await.expect("Failed to get SOL balance");
 
     // PoolManager::get_orca_sol_usdc_pool().await.expect("Failed to get Orca SOL/USDC pool");
-    let wallet = Wallet::get_public_key().await.unwrap();
     // PoolManager::get_orca_positions_for_wallet("312yxT6PFcauztXCfG5jNqcRXqMDCm9HeLBJwbaHL6kH").await.expect("Failed to get Orca positions for wallet");
 
     // Create the channel
@@ -107,7 +104,6 @@ async fn main() {
     let pool_manager_future = async move {
         loop {
             match PoolManager::start(
-                "312yxT6PFcauztXCfG5jNqcRXqMDCm9HeLBJwbaHL6kH",
                 tx.clone()
             ).await {
                 Ok(_) => {
@@ -134,7 +130,8 @@ async fn main() {
                 MessageType::RemovePosition => ("managed-position", "remove"),
             };
 
-            let message = Message::new(channel, instruction, Some(json!(pool_manager_message.data)));
+            let message_data = json!({"data": pool_manager_message.data, "frequency": pool_manager_message.frequency_seconds});
+            let message = Message::new(channel, instruction, Some(message_data));
             match message.broadcast().await {
                 Ok(_) => println!("Broadcasted managed position successfully."),
                 Err(e) => println!("Failed to broadcast managed position: {:?}", e),

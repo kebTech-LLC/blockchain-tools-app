@@ -81,3 +81,10 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+.ellipsis {
+  cursor: pointer;
+  width: fit-content;
+  margin: auto;
+  font-size: 1.5rem;
+}

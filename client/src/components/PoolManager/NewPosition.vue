@@ -1,17 +1,24 @@
 <template>
     <div class="new-position">
-
+        <font-awesome-icon class="close" :icon="['fa', 'times']" @click="poolManager.closeNewPosition()" />
+        <div class="pool-name">{{ position.pool.name }}</div>
+        <div class="price">{{ position.pool.tickerPrice }}</div>
+        <button @click="poolManager.openPosition(position)">Add Position</button>
     </div>
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
+import { poolManager } from '@/modules';
+import { computed, defineComponent } from 'vue';
 
 export default defineComponent({
     setup () {
-        
+        const position = computed(() => poolManager.newPosition!); 
 
-        return {}
+        return {
+            poolManager,
+            position
+        }
     }
 })
 </script>
@@ -20,14 +27,15 @@ export default defineComponent({
 .new-position {
     display: flex;
     flex-direction: column;
-    padding: 1rem;
+    padding: .5rem;
     align-items: center;
     position: absolute;
     left: 0;
     top: 0;
     right: 0;
     bottom: 0;
-    margin: 2rem;
+    margin: 1rem;
+    border-radius: 5px;
     border: 1px solid #ccc;
 }
 
@@ -42,5 +50,9 @@ export default defineComponent({
         color: #213547;
         background-color: #ffffff;
     }
+}
+.close {
+    align-self: flex-end;
+    cursor: pointer;
 }
 </style>

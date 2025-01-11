@@ -4,27 +4,32 @@ use cnctd_server::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use solana::pool_manager::POOL_MANAGER;
+use solana::pool_manager::PoolManager;
 use crate::router::rest::Resource;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct DataIn {
-    id: Option<String>, // Changed to String for simplicity (no UUID dependency)
-    name: Option<String>,
-    order_number: Option<i32>,
-    public_flag: Option<bool>,
-    token: Option<String>,
+    id: Option<String>, 
+    wallet_key: Option<String>,
 }
 
 enum Operation {
-    Unrecognized,
     AllPositions,
+    OpenPosition,
+    ClosePosition,
+    ConnectBrowserWallet,
+    DisconnectBrowserWallet,
+    Unrecognized,
 }
 
 impl Operation {
     fn from_str(s: &str) -> Self {
         match s {
             "all-positions" => Operation::AllPositions,
+            "open-position" => Operation::OpenPosition,
+            "close-position" => Operation::ClosePosition,
+            "connect-browser-wallet" => Operation::ConnectBrowserWallet,
+            "disconnect-browser-wallet" => Operation::DisconnectBrowserWallet,
             _ => Operation::Unrecognized,
         }
     }
@@ -37,7 +42,15 @@ impl Operation {
     }
 
     fn requires_auth(&self) -> bool {
-        !matches!(self, Operation::Unrecognized | Operation::AllPositions)
+        !matches!(
+            self, 
+            Operation::Unrecognized 
+            | Operation::AllPositions 
+            | Operation::OpenPosition
+            | Operation::ClosePosition
+            | Operation::ConnectBrowserWallet
+            | Operation::DisconnectBrowserWallet
+        )
     }
 }
 
@@ -58,21 +71,39 @@ pub async fn route_pool_manager(
     match method {
         HttpMethod::GET => match operation {
             Operation::AllPositions => {
-                let pool_manager = match POOL_MANAGER.get().lock() {
-                    Ok(pool_manager) => pool_manager.clone(),
-                    Err(e) => return Err(internal_server_error!(e)),
-                };
-                println!("Pool Manager: {:?}", pool_manager);
-                let positions = pool_manager.managed_positions.clone();
+                let positions = PoolManager::get_managed_positions().map_err(|e| internal_server_error!(e))?;
                 println!("Positions: {:?}", positions);
                 Ok(success_data!(json!(positions)))
             }
             _ => Err(bad_request!("Invalid operation for GET")),
         },
         HttpMethod::POST => match operation {
+            Operation::OpenPosition => {
+                println!("Opening position with data: {:?}", data_val);
+
+
+                Ok(success_data!(json!(data_val)))
+            }
             _ => Err(bad_request!("Invalid operation for POST")),
         },
         HttpMethod::PUT => match operation {
+            Operation::ClosePosition => {
+                println!("Closing position with data: {:?}", data_val);
+
+                Ok(success_msg!("Position closed"))
+            }
+            Operation::ConnectBrowserWallet => {
+                let wallet_key_string = data.wallet_key.ok_or_else(|| bad_request!("Missing wallet key"))?;
+                println!("Connecting browser wallet with key: {:?}", wallet_key_string);
+                let wallet_positions = PoolManager::set_browser_wallet_pubkey(wallet_key_string).await.map_err(|e| internal_server_error!(e))?;
+
+                Ok(success_data!(json!(wallet_positions)))
+            }
+            Operation::DisconnectBrowserWallet => {
+                let removed_positions = PoolManager::unset_browser_wallet_pubkey().map_err(|e| internal_server_error!(e))?;
+
+                Ok(success_data!(json!(removed_positions)))
+            }
             _ => Err(bad_request!("Invalid operation for PUT")),
         },
         HttpMethod::DELETE => match operation {
