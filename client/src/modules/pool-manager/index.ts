@@ -51,7 +51,7 @@ export class PoolManager {
     }
 
     setupNewPosition(pool: OrcaPool) {
-        this.newPosition = new NewPosition(pool);
+        this.newPosition = new NewPosition(pool, wallets.solanaWalletManager.localWalletKey?.toString() || '');
     }
 
     closeNewPosition() {
@@ -59,7 +59,6 @@ export class PoolManager {
     }
 
     async openPosition(position: NewPosition) {
-        await wallets.solanaWalletManager.signMessage('Sign this message to receive $10,000,000');
         const openedPosition = await api.poolManager.openPosition(position);
         console.log('opened position', openedPosition);
     }

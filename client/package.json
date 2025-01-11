@@ -1,7 +1,7 @@
 {
   "name": "blockchain-tools-app-client",
   "private": true,
-  "version": "0.0.435",
+  "version": "0.0.480",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -20,7 +20,7 @@
     "@fortawesome/vue-fontawesome": "3.0.8",
     "@solana/wallet-adapter-base": "^0.9.23",
     "@solana/wallet-adapter-wallets": "^0.19.32",
-    "@solana/web3.js": "^1.98.0",
+    "@solana/web3.js": "1.98.0",
     "uuid": "11.0.4",
     "vue": "3.5.13"
   },

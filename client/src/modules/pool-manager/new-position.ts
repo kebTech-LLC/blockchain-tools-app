@@ -1,12 +1,30 @@
-import { poolManager } from "..";
+import { poolManager, wallets } from "..";
 import { OrcaPool } from "./orca-pool";
 
-export class NewPosition {
-    pool: OrcaPool;
-    lowerRange: number;
-    UpperRange: number;
+enum PoolType {
+    Orca,
+    Raydium,
+    Serum
+}
 
-    constructor(pool: OrcaPool) {
+export class NewPosition {
+    walletKey: string;
+    walletType: string;
+    poolType: PoolType;
+    rangeLower: number;
+    rangeUpper: number;
+    pool: OrcaPool;
+
+    constructor(pool: OrcaPool, walletKey: string) {
+        this.walletKey = walletKey;
+        this.walletType = wallets.solanaWalletManager.getWalletType(walletKey) || '';
+        this.poolType = PoolType.Orca;
+        this.rangeLower = 0;
+        this.rangeUpper = 0;
         this.pool = pool;
+    }
+
+    open() {
+        poolManager.openPosition(this);
     }
 }

@@ -1,5 +1,5 @@
 <template>
-    <div id="pool-managers">
+    <div id="pool-manager">
         <div class="positions">
             <ManagedPosition v-for="position in poolManager.managedPositions" :key="position.address" :position="position" />
             <NewPosition v-if="poolManager.newPosition" />
@@ -35,7 +35,7 @@ export default defineComponent({
 </script>
 
 <style scoped>
-#pool-managers {
+#pool-manager {
     display: flex;
     width: 100%;
     flex-direction: column;
@@ -47,6 +47,7 @@ export default defineComponent({
     padding: 1rem;
     position: relative;
     overflow: scroll;
+    min-height: 430px;
 }
 .pools {
     display: flex;

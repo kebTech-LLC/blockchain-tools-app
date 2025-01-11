@@ -1,8 +1,6 @@
 import { Connection, PublicKey, clusterApiUrl } from '@solana/web3.js';
-import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import api from '../server/api';
 import { poolManager } from '..';
-// import { PhantomWalletAdapter } from '@solana/wallet-adapter-wallets';
 
 export const connection = new Connection(clusterApiUrl('mainnet-beta'));
 
@@ -12,8 +10,8 @@ export class SolanaWalletManager {
         type: string
     }[] = [];
 
-    get browserWalletKey() {
-        return this.publicKeys.find(k => k.type === 'browser')?.key;
+    get localWalletKey() {
+        return this.publicKeys.find(k => k.type === 'Local')?.key;
     }
 
     async connect() {
@@ -30,10 +28,10 @@ export class SolanaWalletManager {
             if (!this.publicKeys.find(k => k.key.equals(publicKey))) {
                 this.publicKeys.push({
                     key: publicKey,
-                    type: 'browser'
+                    type: 'local'
                 });
             }
-            const walletPositions = await api.poolManager.connectBrowserWallet(publicKey.toString());
+            const walletPositions = await api.poolManager.connectLocalWallet(publicKey.toString());
             console.log('Wallet positions:', walletPositions);
             poolManager.updateManagedPositions(walletPositions);
             console.log('Connected to server with wallet:', publicKey.toString());
@@ -51,11 +49,11 @@ export class SolanaWalletManager {
         
         try {
             await provider.disconnect();
-            const keyToDisconnect = this.publicKeys.find(k => k.type === 'browser');
+            const keyToDisconnect = this.publicKeys.find(k => k.type === 'local');
             if (keyToDisconnect) {
                 this.publicKeys.splice(this.publicKeys.indexOf(keyToDisconnect), 1);
             }
-            const removedPositions = await api.poolManager.disconnectBrowserWallet();
+            const removedPositions = await api.poolManager.disconnectLocalWallet();
             poolManager.removeManagedPositions(removedPositions);
             console.log('Disconnected from Phantom Wallet:', keyToDisconnect?.key.toString());
 
@@ -84,5 +82,32 @@ export class SolanaWalletManager {
             console.error('Signing failed:', error);
             return null;
         }
+    }
+
+    async populateProgrammaticWalletPubkey() {
+        const walletPubkey = await api.poolManager.get.programmaticWalletPubkey();
+        console.log('Programmatic wallet pubkey:', walletPubkey);
+        if (!this.publicKeys.find(k => k.key.equals(new PublicKey(walletPubkey)))) {
+            this.publicKeys.push({
+                key: new PublicKey(walletPubkey),
+                type: 'Programmatic'
+            });
+        }
+    }
+
+    async populateLocalWalletPubkey() {
+        const walletPubkey = await api.poolManager.get.storedLocalWalletPubkey();
+        console.log('Local wallet pubkey:', walletPubkey);
+
+        if (!this.publicKeys.find(k => k.key.equals(new PublicKey(walletPubkey)))) {
+            this.publicKeys.push({
+                key: new PublicKey(walletPubkey),
+                type: 'Local'
+            });
+        }
+    }
+
+    getWalletType(publicKey: string) {
+        return this.publicKeys.find(k => k.key.equals(new PublicKey(publicKey)))?.type;
     }
 }

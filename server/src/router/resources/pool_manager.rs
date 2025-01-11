@@ -4,7 +4,7 @@ use cnctd_server::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use solana::pool_manager::PoolManager;
+use solana::{pool_manager::{new_position::NewPosition, PoolManager}, wallet::Wallet};
 use crate::router::rest::Resource;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -17,8 +17,10 @@ enum Operation {
     AllPositions,
     OpenPosition,
     ClosePosition,
-    ConnectBrowserWallet,
-    DisconnectBrowserWallet,
+    ConnectLocalWallet,
+    DisconnectLocalWallet,
+    ProgrammaticWalletPubkey,
+    StoredLocalWalletPubkey,
     Unrecognized,
 }
 
@@ -28,8 +30,10 @@ impl Operation {
             "all-positions" => Operation::AllPositions,
             "open-position" => Operation::OpenPosition,
             "close-position" => Operation::ClosePosition,
-            "connect-browser-wallet" => Operation::ConnectBrowserWallet,
-            "disconnect-browser-wallet" => Operation::DisconnectBrowserWallet,
+            "connect-local-wallet" => Operation::ConnectLocalWallet,
+            "disconnect-local-wallet" => Operation::DisconnectLocalWallet,
+            "programmatic-wallet-pubkey" => Operation::ProgrammaticWalletPubkey,
+            "stored-local-wallet-pubkey" => Operation::StoredLocalWalletPubkey,
             _ => Operation::Unrecognized,
         }
     }
@@ -48,8 +52,8 @@ impl Operation {
             | Operation::AllPositions 
             | Operation::OpenPosition
             | Operation::ClosePosition
-            | Operation::ConnectBrowserWallet
-            | Operation::DisconnectBrowserWallet
+            | Operation::ConnectLocalWallet
+            | Operation::DisconnectLocalWallet
         )
     }
 }
@@ -64,9 +68,9 @@ pub async fn route_pool_manager(
     let operation = Operation::from_option(operation);
     let data: DataIn = serde_json::from_value(data_val.clone()).map_err(|e| bad_request!(e))?;
 
-    if operation.requires_auth() {
-        Resource::authenticate(auth_token.clone()).map_err(|e| unauthorized!(e))?;
-    }
+    // if operation.requires_auth() {
+    //     Resource::authenticate(auth_token.clone()).map_err(|e| unauthorized!(e))?;
+    // }
 
     match method {
         HttpMethod::GET => match operation {
@@ -75,14 +79,28 @@ pub async fn route_pool_manager(
                 println!("Positions: {:?}", positions);
                 Ok(success_data!(json!(positions)))
             }
+            Operation::ProgrammaticWalletPubkey => {
+                let wallet_pubkey = Wallet::get_programmatic_pubkey().map_err(|e| internal_server_error!(e))?;
+
+                Ok(success_data!(json!(wallet_pubkey.to_string())))
+            }
+            Operation::StoredLocalWalletPubkey => {
+                let wallet_pubkey = Wallet::get_stored_local_wallet_pubkey().map_err(|e| internal_server_error!(e))?;
+
+                Ok(success_data!(json!(wallet_pubkey.to_string())))
+            }
             _ => Err(bad_request!("Invalid operation for GET")),
         },
         HttpMethod::POST => match operation {
             Operation::OpenPosition => {
                 println!("Opening position with data: {:?}", data_val);
 
+                let new_position: NewPosition = serde_json::from_value(data_val).map_err(|e| bad_request!(e))?;
 
-                Ok(success_data!(json!(data_val)))
+                PoolManager::open_position(new_position).await.map_err(|e| internal_server_error!(e))?;
+
+
+                Ok(success_msg!("Position opened"))
             }
             _ => Err(bad_request!("Invalid operation for POST")),
         },
@@ -92,15 +110,15 @@ pub async fn route_pool_manager(
 
                 Ok(success_msg!("Position closed"))
             }
-            Operation::ConnectBrowserWallet => {
+            Operation::ConnectLocalWallet => {
                 let wallet_key_string = data.wallet_key.ok_or_else(|| bad_request!("Missing wallet key"))?;
-                println!("Connecting browser wallet with key: {:?}", wallet_key_string);
-                let wallet_positions = PoolManager::set_browser_wallet_pubkey(wallet_key_string).await.map_err(|e| internal_server_error!(e))?;
+                println!("Connecting local wallet with key: {:?}", wallet_key_string);
+                let wallet_positions = PoolManager::set_local_wallet_pubkey(wallet_key_string).await.map_err(|e| internal_server_error!(e))?;
 
                 Ok(success_data!(json!(wallet_positions)))
             }
-            Operation::DisconnectBrowserWallet => {
-                let removed_positions = PoolManager::unset_browser_wallet_pubkey().map_err(|e| internal_server_error!(e))?;
+            Operation::DisconnectLocalWallet => {
+                let removed_positions = PoolManager::unset_local_wallet_pubkey().map_err(|e| internal_server_error!(e))?;
 
                 Ok(success_data!(json!(removed_positions)))
             }

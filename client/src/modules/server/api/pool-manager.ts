@@ -25,6 +25,20 @@ export default {
                         ok(data.data)
                     })
             })
+        },
+        programmaticWalletPubkey: (): Promise<string> => {
+            return new Promise((ok, err) => {
+                server.get(resource, 'programmatic-wallet-pubkey', {})
+                    .then(r => ok(r.data))
+                    .catch(e => err(e))
+            })
+        },
+        storedLocalWalletPubkey: (): Promise<string> => {
+            return new Promise((ok, err) => {
+                server.get(resource, 'stored-local-wallet-pubkey', {})
+                    .then(r => ok(r.data))
+                    .catch(e => err(e))
+            })
         }
     },
     openPosition: (position: NewPosition): Promise<any> => {
@@ -41,10 +55,10 @@ export default {
                 .catch(e => err(e))
         })
     },
-    connectBrowserWallet: (walletKey: string): Promise<ManagedPosition[]> => {
+    connectLocalWallet: (walletKey: string): Promise<ManagedPosition[]> => {
         console.log('connecting wallet', walletKey)
         return new Promise((ok, err) => {
-            server.put(resource, 'connect-browser-wallet', { wallet_key: walletKey})
+            server.put(resource, 'connect-local-wallet', { wallet_key: walletKey})
                 .then(r => {
                     const managedPositions = r.data.map((position: any) => new ManagedPosition(position));
                     console.log('connected wallet', managedPositions)
@@ -53,9 +67,9 @@ export default {
                 .catch(e => err(e))
         })
     },
-    disconnectBrowserWallet: (): Promise<ManagedPosition[]> => {
+    disconnectLocalWallet: (): Promise<ManagedPosition[]> => {
         return new Promise((ok, err) => {
-            server.put(resource, 'disconnect-browser-wallet', {})
+            server.put(resource, 'disconnect-local-wallet', {})
                 .then(r => {
                     const removedPositions = r.data.map((position: any) => new ManagedPosition(position));
                     console.log('disconnected wallet', removedPositions)
@@ -63,5 +77,6 @@ export default {
                 })
                 .catch(e => err(e))
         })
-    }
+    },
+    
 }

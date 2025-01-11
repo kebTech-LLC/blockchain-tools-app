@@ -3,12 +3,23 @@
         <font-awesome-icon class="close" :icon="['fa', 'times']" @click="poolManager.closeNewPosition()" />
         <div class="pool-name">{{ position.pool.name }}</div>
         <div class="price">{{ position.pool.tickerPrice }}</div>
+        <div class="range">
+            <input type="number" v-model="position.rangeLower" />
+            <input type="number" v-model="position.rangeUpper" />
+        </div>
+        <select id="wallet" v-model="position.walletKey">
+            <option v-for="wallet in wallets.solanaWalletManager.publicKeys" 
+                :key="wallet.key.toString()" 
+                :value="wallet.key.toString()">
+                {{ wallet.type }}
+            </option>
+        </select>
         <button @click="poolManager.openPosition(position)">Add Position</button>
     </div>
 </template>
 
 <script lang="ts">
-import { poolManager } from '@/modules';
+import { poolManager, wallets } from '@/modules';
 import { computed, defineComponent } from 'vue';
 
 export default defineComponent({
@@ -17,7 +28,8 @@ export default defineComponent({
 
         return {
             poolManager,
-            position
+            position,
+            wallets
         }
     }
 })

@@ -92,6 +92,17 @@ impl Coinbase {
     
         Ok(price)
     }
+
+    pub async fn start_sol_websocket() {
+        let coinbase = Coinbase::new(
+            "wss://ws-feed.pro.coinbase.com",
+            vec!["SOL-USD"],
+            vec!["ticker"],
+        );
+
+        coinbase.connect_and_subscribe().await;
+
+    }
 }
 
 #[derive(Serialize, Deserialize)]

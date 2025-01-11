@@ -79,14 +79,11 @@ async fn main() {
     // } else {
     //     println!("Database initialized.");
     // }
-    // PoolManager::get_orca_sol_usdc_pool().await.expect("Failed to get Orca SOL/USDC pool");
-    // PoolManager::open_sol_usdc_position().await.expect("Failed to open SOL/USDC position");
 
-    // SolanaPools::get_sol_balance().await.expect("Failed to get SOL balance");
-
-    // PoolManager::get_orca_sol_usdc_pool().await.expect("Failed to get Orca SOL/USDC pool");
-    // PoolManager::get_orca_positions_for_wallet("312yxT6PFcauztXCfG5jNqcRXqMDCm9HeLBJwbaHL6kH").await.expect("Failed to get Orca positions for wallet");
-
+    let coinbase_future = async {
+        Coinbase::start_sol_websocket().await;
+    };
+  
     // Create the channel
     let (tx, rx) = mpsc::channel::<PoolManagerMessage>(100);
 
@@ -123,7 +120,7 @@ async fn main() {
     let rx_future = async move {
         let mut rx = rx;  // make rx mut in this scope
         while let Some(pool_manager_message) = rx.recv().await {
-            println!("Received a new PoolManagerMessage: {:?}", pool_manager_message);
+            println!("Received a new PoolManagerMessage");
 
             let (channel, instruction) = match pool_manager_message.message_type {
                 MessageType::UpdatePosition => ("managed-position", "update"),
@@ -144,6 +141,7 @@ async fn main() {
     // - The PoolManager will keep retrying in a loop.
     // - The receiver loop will keep reading until `tx` is dropped.
     tokio::select! {
+        // _ = coinbase_future => (),
         _ = server_future => (),
         _ = pool_manager_future => (),
         _ = rx_future => (),
