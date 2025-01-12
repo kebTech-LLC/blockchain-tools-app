@@ -51,7 +51,7 @@ export class PoolManager {
     }
 
     setupNewPosition(pool: OrcaPool) {
-        this.newPosition = new NewPosition(pool, wallets.solanaWalletManager.localWalletKey?.toString() || '');
+        this.newPosition = new NewPosition(pool);
     }
 
     closeNewPosition() {

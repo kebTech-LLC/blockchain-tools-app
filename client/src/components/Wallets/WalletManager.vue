@@ -1,8 +1,14 @@
 <template>
     <div id="wallet-manager">
-        <button v-if="!browserKey" @click="walletManager.connect">Connect Wallet</button>
+        <!-- <button v-if="!browserKey" @click="walletManager.connect">Connect Wallet</button>
         <p v-if="browserKey">Connected to: {{ browserKey.key }}</p>
-        <button v-if="browserKey" @click="walletManager.disconnect">Disconnect</button>
+        <button v-if="browserKey" @click="walletManager.disconnect">Disconnect</button> -->
+        <div class="wallets">
+            <div v-for="wallet in walletManager.publicKeys" :key="wallet.key.toString()">
+                <div>{{ wallet.type }}</div>
+                <div>{{ wallet.key.toString() }}</div>
+            </div>
+        </div>
     </div>
 </template>
   

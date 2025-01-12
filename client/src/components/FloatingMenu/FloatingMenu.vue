@@ -72,8 +72,6 @@ export default defineComponent({
             return {
                 'left': views.floatingMenu?.position.includes('right') ? views.floatingMenu?.x - width - 10 + 'px' : views.floatingMenu?.x + 'px',
                 'top': views.floatingMenu?.position.includes('bottom') ? views.floatingMenu?.y - height + 'px' : views.floatingMenu?.y + 'px',
-                // 'bottom-right': views.floatingMenu?.position === 'bottom-right',
-                // 'bottom-left': views.floatingMenu?.position === 'bottom-left',
             }
         });
 

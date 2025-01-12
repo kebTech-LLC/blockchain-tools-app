@@ -39,6 +39,7 @@ export default defineComponent({
     border: 1px solid #ccc;
     border-radius: 5px;
     justify-content: space-between;
+    position: relative;
 }
 .field {
     width: 100%;

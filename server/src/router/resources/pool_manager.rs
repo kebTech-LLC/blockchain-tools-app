@@ -4,7 +4,7 @@ use cnctd_server::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use solana::{pool_manager::{new_position::NewPosition, PoolManager}, wallet::Wallet};
+use solana::{pool_manager::{new_position::NewPosition, PoolManager}, rpc::RpcUrl, wallet::Wallet};
 use crate::router::rest::Resource;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -82,10 +82,14 @@ pub async fn route_pool_manager(
             Operation::ProgrammaticWalletPubkey => {
                 let wallet_pubkey = Wallet::get_programmatic_pubkey().map_err(|e| internal_server_error!(e))?;
 
+                Wallet::get_sol_balance(&RpcUrl::solana_mainnet(), wallet_pubkey).await.map_err(|e| internal_server_error!(e))?;
+
                 Ok(success_data!(json!(wallet_pubkey.to_string())))
             }
             Operation::StoredLocalWalletPubkey => {
                 let wallet_pubkey = Wallet::get_stored_local_wallet_pubkey().map_err(|e| internal_server_error!(e))?;
+
+                Wallet::get_sol_balance(&RpcUrl::solana_mainnet(), wallet_pubkey).await.map_err(|e| internal_server_error!(e))?;
 
                 Ok(success_data!(json!(wallet_pubkey.to_string())))
             }

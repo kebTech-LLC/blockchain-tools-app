@@ -89,7 +89,6 @@ export class FloatingMenu {
         const documentWidth = document.body.clientWidth;
         const documentHeight = document.body.clientHeight;
 
-        document.body.style.overflow = 'hidden';
 
         const locationOfClick = () => {
             const xPosition = x > documentWidth / 2 ? 'right' : 'left';

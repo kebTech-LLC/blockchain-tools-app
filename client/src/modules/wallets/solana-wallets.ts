@@ -2,9 +2,8 @@ import { Connection, PublicKey, clusterApiUrl } from '@solana/web3.js';
 import api from '../server/api';
 import { poolManager } from '..';
 
-export const connection = new Connection(clusterApiUrl('mainnet-beta'));
-
 export class SolanaWalletManager {
+    client: Connection = new Connection(clusterApiUrl('mainnet-beta'), 'confirmed');
     publicKeys: {
         key: PublicKey,
         type: string
@@ -12,6 +11,10 @@ export class SolanaWalletManager {
 
     get localWalletKey() {
         return this.publicKeys.find(k => k.type === 'Local')?.key;
+    }
+
+    get programmaticWalletKey() {
+        return this.publicKeys.find(k => k.type === 'Programmatic')?.key
     }
 
     async connect() {
@@ -93,6 +96,8 @@ export class SolanaWalletManager {
                 type: 'Programmatic'
             });
         }
+        // this.getSolBalance(new PublicKey(walletPubkey));
+        // this.getTokenBalances(new PublicKey(walletPubkey));
     }
 
     async populateLocalWalletPubkey() {
@@ -105,9 +110,23 @@ export class SolanaWalletManager {
                 type: 'Local'
             });
         }
+
+        // this.getSolBalance(new PublicKey(walletPubkey));
+        // this.getTokenBalances(new PublicKey(walletPubkey));
     }
 
     getWalletType(publicKey: string) {
         return this.publicKeys.find(k => k.key.equals(new PublicKey(publicKey)))?.type;
+    }
+
+    async getSolBalance(publicKey: PublicKey) {
+        const balance = await this.client.getBalance(publicKey);
+        console.log('Balance:', balance);
+    }
+
+    async getTokenBalances(publicKey: PublicKey) {
+        const tokens = await this.client.getParsedTokenAccountsByOwner(publicKey, { mint: new PublicKey('3wyAj7Rt1TWVPZVteFJPLa26JmLvdb1CAKEFZm3NY75E') });
+        const tokenBalances = tokens.value.map(t => t.account.data.parsed.info.tokenAmount.uiAmount);
+        console.log('Token balances:', tokenBalances);
     }
 }
