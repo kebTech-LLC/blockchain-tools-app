@@ -97,10 +97,9 @@ pub async fn route_pool_manager(
         },
         HttpMethod::POST => match operation {
             Operation::OpenPosition => {
-                println!("Opening position with data: {:?}", data_val);
-
                 let new_position: NewPosition = serde_json::from_value(data_val).map_err(|e| bad_request!(e))?;
 
+                println!("Opening position with new_position: {:?}", new_position);
                 PoolManager::open_position(new_position).await.map_err(|e| internal_server_error!(e))?;
 
 

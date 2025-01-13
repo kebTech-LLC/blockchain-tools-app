@@ -1,5 +1,5 @@
 
-import { poolManager, server, wallets } from "@/modules";
+import { poolManager, server, solana } from "@/modules";
 // import * as state from "@/state";
 import { reactive, watchEffect } from "vue";
 
@@ -37,8 +37,8 @@ export class Launcher {
         // console.log('launching app');
         // console.log('build: ', state.visitor.build); 
         // console.log('build date ', state.visitor.buildDate);
-        await wallets.solanaWalletManager.populateLocalWalletPubkey();
-        await wallets.solanaWalletManager.populateProgrammaticWalletPubkey();
+        await solana.populateLocalWalletPubkey();
+        await solana.populateProgrammaticWalletPubkey();
         await server.registerSocket();
         console.log('socket registered from launcher');
         await poolManager.populateOrcaPools();

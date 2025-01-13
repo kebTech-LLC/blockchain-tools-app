@@ -1,7 +1,7 @@
 <template>
     <div class="managed-position">
         <div class="pool-type">{{ position.poolType }}</div>
-        <div>{{ wallets.solanaWalletManager.getWalletType(position.walletKey) }} Wallet</div>
+        <div>{{ solana.getWallet(position.walletKey)?.name || 'Unknown' }} Wallet</div>
         <div class="name">{{ position.tokenA.symbol + '/' +  position.tokenB.symbol }}</div>
         <div class="current-price">{{ position.tickerPrice }}</div>
         <div class="range">
@@ -24,7 +24,7 @@
 </template>
 
 <script lang="ts">
-import { ticker, wallets } from '@/modules';
+import { solana, ticker } from '@/modules';
 import { ManagedPosition } from '@/modules/pool-manager/managed-position';
 import { FloatingMenu, FloatingMenuType } from '@/state/views/floating-menu';
 import { defineComponent } from 'vue'
@@ -43,7 +43,7 @@ export default defineComponent({
             ticker,
             FloatingMenu,
             FloatingMenuType,
-            wallets
+            solana
         }
     }
 })
@@ -59,6 +59,7 @@ export default defineComponent({
     border-radius: 0.5rem;
     text-align: center;
     min-width: 200px;
+    width: fit-content;
 }
 .pool-type {
     font-weight: bold;

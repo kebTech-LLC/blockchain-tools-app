@@ -3,15 +3,12 @@ import { Ticker } from "./ticker";
 import { Server } from "./server";
 import { Launcher } from "./launcher";
 import { PoolManager } from "./pool-manager";
-import { solanaWalletManager } from "./wallets";
+import { Solana } from "./solana";
 
 export const ticker = reactive(new Ticker());
 export const server = reactive(new Server());
 export const launcher = reactive(new Launcher());
 export const poolManager = reactive(new PoolManager());
-export const wallets = {
-    solanaWalletManager
-}
+export const solana = reactive(new Solana())
 
-window['poolManager'] = poolManager;
-window['wallets'] = wallets;
+window['modules'] = { ticker, server, launcher, poolManager, solana };

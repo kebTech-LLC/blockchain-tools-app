@@ -43,7 +43,19 @@ export default {
     },
     openPosition: (position: NewPosition): Promise<any> => {
         return new Promise((ok, err) => {
-            server.post(resource, 'open-position', position)
+            server.post(resource, 'open-position', {
+                wallet: position.wallet,
+                pool_type: position.poolType,
+                range_lower: position.rangeLower,
+                range_upper: position.rangeUpper,
+                pool_address: position.pool.address,
+                amount_a: position.amountA,
+                amount_b: position.amountB,
+                amount_total: position.amountTotal,
+                wallet_balance_token_a: position.walletBalanceTokenA,
+                wallet_balance_token_b: position.walletBalanceTokenB,
+                wallet_balance_total: position.walletBalanceTotal,
+            })
                 .then(r => ok(r.data))
                 .catch(e => err(e))
         })

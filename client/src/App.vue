@@ -1,6 +1,6 @@
 <template>
 	<Ticker />
-	<WalletManager />
+	<!-- <WalletManager /> -->
 	<PoolManager />
 	<Transition name="menu">
 		<FloatingMenu v-if="views.floatingMenu && views.floatingMenu.options.length > 0" />

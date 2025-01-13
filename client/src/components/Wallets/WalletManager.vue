@@ -4,24 +4,23 @@
         <p v-if="browserKey">Connected to: {{ browserKey.key }}</p>
         <button v-if="browserKey" @click="walletManager.disconnect">Disconnect</button> -->
         <div class="wallets">
-            <div v-for="wallet in walletManager.publicKeys" :key="wallet.key.toString()">
-                <div>{{ wallet.type }}</div>
-                <div>{{ wallet.key.toString() }}</div>
+            <div v-for="wallet in solana.wallets" :key="wallet.pubkey.toString()">
+                <div>{{ wallet.name }}</div>
+                <div>{{ wallet.pubkey.toString() }}</div>
             </div>
         </div>
     </div>
 </template>
   
 <script lang="ts">
-import { wallets } from '@/modules';
+import { solana } from '@/modules';
 import api from '@/modules/server/api';
 import { computed, defineComponent, watchEffect } from 'vue';
   
 export default defineComponent({
     setup() {
-        const walletManager = wallets.solanaWalletManager;
 
-        const browserKey = computed(() => walletManager.publicKeys.find((key) => key.type === 'browser'));
+        const localWallet = computed(() => solana.localWallet);
         
         // watchEffect(async () => {
         //     console.log('browserKey', browserKey.value?.key)
@@ -29,8 +28,7 @@ export default defineComponent({
         // })
 
         return {
-            walletManager,
-            browserKey
+            solana
         }
     },
 });

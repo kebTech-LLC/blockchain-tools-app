@@ -1,85 +1,128 @@
 <template>
     <div class="new-position">
         <div class="top">
-            <font-awesome-icon class="reset" :icon="['fa', 'rotate-left']" @click="poolManager.setupNewPosition(position.pool)" />
-            <font-awesome-icon class="close" :icon="['fa', 'times']" @click="poolManager.closeNewPosition()" />
+            <font-awesome-icon class="reset" :icon="['fa', 'rotate-left']" @click.stop="position.reset()" />
+            <div class="pool-name">{{ position.pool.name }}</div>
+            <font-awesome-icon class="close" :icon="['fa', 'times']" @click.stop="poolManager.closeNewPosition()" />
+        </div>
+        <div class="price">${{ position.pool.tickerPrice }}</div>
+        <div class="bottom">
+            <div class="position">
+                <div class="range-heading">Range</div>    
+                <div class="range-mode-selector">
+                    <button @click="position.setDynamicRange()" :class="{ 'selected': position.dynamicRange }">Dynamic</button>
+                    <button @click="position.setDynamicRange(false)" :class="{ 'selected': !position.dynamicRange }">Fixed</button>
+                </div>
+                <div v-if="!position.dynamicRange" class="">{{ (position.percentage * 100).toFixed(2) }}%</div>
+                <div v-if="position.dynamicRange" class="percentages">
+                    <div class="percentage">
+                        <input ref="customPercentage" 
+                            class="custom" 
+                            step="0.1" 
+                            type="number" 
+                            value=".1" 
+                            min="0.1" 
+                            max="100" 
+                            @input="position.adjustPercentage(parseFloat(($event.target as HTMLInputElement).value))"
+                        />
+                    </div>
+                    
+                    <div v-for="percentage in percentageOptions" 
+                        class="percentage"
+                        :class="{ 'selected': position.percentage === percentage / 100}"
+                        @click="position.adjustPercentage(percentage)">
+                        {{ percentage }}%
+                    </div>
+                </div>
+                <div class="range">
+                    <div v-if="position.dynamicRange">{{ position.rangeLower.toFixed(4) }}</div>
+                    <div v-if="position.dynamicRange">{{ position.rangeUpper.toFixed(4) }}</div>
+                    <input v-if="!position.dynamicRange" 
+                        type="number" 
+                        v-model="position.manualRangeLower" 
+                        :max="position.manualRangeUpper * .99999999999"
+                    />
+                    <input v-if="!position.dynamicRange" 
+                        type="number" 
+                        v-model="position.manualRangeUpper" 
+                        :min="position.manualRangeLower * 1.0000000001" 
+                    />
+                </div>
+                <div class="distribution">
+                    <input class="slider" type="range" min="0" max="100" v-model="position.distribution" step="1" />
+                </div>
+                <div>Total Amount</div>
+                <input type="number" v-model="position.amountTotal" :max="position.walletBalanceTotal" />
+                <div class="token-percentages">
+                    <div class="token">
+                        <div class="token-symbol">{{ position.pool.tokenA.symbol }}</div>
+                        <div class="token-percentage">{{ position.distributionA.toFixed(2) }}%</div>
+                        <div class="token-amount">${{ position.amountA.toFixed(2) }}</div>
+                    </div>
+                    <div class="token">
+                        <div class="token-symbol">{{ position.pool.tokenB.symbol }}</div>
+                        <div class="token-percentage">{{ position.distributionB.toFixed(2) }}%</div>
+                        <div class="token-amount">${{ position.amountB.toFixed(2) }}</div>
+                    </div>
+                </div>
+                
+            </div>
+            <div class="wallet-info">
+                <div class="heading">Wallet</div>
+                <select id="wallet" v-model="position.wallet">
+                    <option v-for="wallet in solana.wallets" 
+                        :key="wallet.pubkey.toString()" 
+                        :value="wallet">
+                        {{ wallet.name }}
+                    </option>
+                </select>
+                <div class="balances">
+                    <div class="balance">
+                        <div class="token-symbol">{{ position.pool.tokenA.symbol }} Balance</div>
+                        <div class="token-amount">${{ position.walletBalanceTokenA.toFixed(2) }}</div>
+                    </div>
+                    <div class="balance">
+                        <div class="token-symbol">{{ position.pool.tokenB.symbol }} Balance</div>
+                        <div class="token-amount">${{ position.walletBalanceTokenB.toFixed(2) }}</div>
+                    </div>
+                    <div class="balance">
+                        <div class="token-symbol">Total Balance</div>
+                        <div class="token-amount">${{ (position.walletBalanceTokenA + position.walletBalanceTokenB).toFixed(2) }}</div>
+                    </div>
+                </div>
+            </div>
         </div>
         
-        <div class="pool-name">{{ position.pool.name }}</div>
-        <div class="price">{{ position.pool.tickerPrice }}</div>
-        <div class="percentages">
-            <div class="percentage" @click="position.adjustPercentage(parseInt(customPercentage!.value))">
-                <input ref="customPercentage" 
-                    class="custom" 
-                    step="0.1" 
-                    type="number" 
-                    value=".1" 
-                    min="0.1" 
-                    max="100" 
-                    @change="position.adjustPercentage(parseInt(customPercentage!.value))"
-                />
-            </div>
-            
-            <div v-for="percentage in percentageOptions" 
-                class="percentage"
-                :class="{ 'selected': position.percentage === percentage / 100}"
-                @click="position.adjustPercentage(percentage)">
-                {{ percentage }}
-            </div>
-        </div>
-        <div class="distribution">
-            <input type="range" min="0" max="100" v-model="position.distribution" step="1" />
-        </div>
-        <div class="token-percentages">
-            <div class="token">
-                <div class="token-symbol">{{ position.pool.tokenA.symbol }}</div>
-                <div class="token-percentage">{{ position.distributionA }}%</div>
-            </div>
-            <div class="token">
-                <div class="token-symbol">{{ position.pool.tokenB.symbol }}</div>
-                <div class="token-percentage">{{ position.distributionB }}%</div>
-            </div>
-            
-        </div>
-        <div class="range-mode-selector">
-            <button @click="position.setDynamicRange()" :class="{ 'selected': position.dynamicRange }">Dynamic</button>
-            <button @click="position.setDynamicRange(false)" :class="{ 'selected': !position.dynamicRange }">Fixed</button>
-        </div>
-        <div class="range">
-            <div v-if="position.dynamicRange">{{ position.rangeLower }}</div>
-            <div v-if="position.dynamicRange">{{ position.rangeUpper }}</div>
-            <input v-if="!position.dynamicRange" type="number" v-model="position.manualRangeLower" />
-            <input v-if="!position.dynamicRange" type="number" v-model="position.manualRangeUpper" />
-        </div>
-        <select id="wallet" v-model="position.walletKey">
-            <option v-for="wallet in wallets.solanaWalletManager.publicKeys" 
-                :key="wallet.key.toString()" 
-                :value="wallet.key.toString()">
-                {{ wallet.type }}
-            </option>
-        </select>
-        <button @click="poolManager.openPosition(position)">Add Position</button>
+        
+        
+       
+        <button class="open-button" @click="poolManager.openPosition(position)">Open Position</button>
     </div>
 </template>
 
 <script lang="ts">
-import { poolManager, wallets } from '@/modules';
+import { poolManager, solana } from '@/modules';
 import { computed, defineComponent, ref, watchEffect } from 'vue';
 
 export default defineComponent({
     setup () {
         const customPercentage = ref(null as HTMLInputElement | null);
-        const position = computed(() => poolManager.newPosition!); 
-        const percentageOptions = [0.1, 0.25, 0.5, 1, 2, 5, 10];
+        const position = poolManager.newPosition!; 
+        const percentageOptions = [0.25, 0.5, 1, 2.5, 5];
 
         watchEffect(() => {
-            position.value.recalculate();
+            position.recalculate();
         });
+
+        watchEffect(() => {
+            position.calculateWalletBalance();
+            
+        })
 
         return {
             poolManager,
             position,
-            wallets,
+            solana,
             percentageOptions,
             customPercentage
         }
@@ -91,17 +134,67 @@ export default defineComponent({
 .new-position {
     display: flex;
     flex-direction: column;
+    justify-content: center;
     gap: 1rem;
-    padding: .5rem;
-    align-items: center;
-    position: absolute;
-    left: 0;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    margin: 1rem;
+    padding: 1rem;
     border-radius: 5px;
     border: 1px solid #ccc;
+    padding-top: .5rem;
+    margin-left: 1rem;
+    margin-right: 1rem;
+    align-items: center;
+}
+
+.pool-name {
+    font-size: 1.5rem;
+    font-weight: bold;
+    width: fit-content;
+}
+
+.price {
+    font-size: 1.5rem;
+    text-align: center;
+}
+.top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+.reset {
+    cursor: pointer;
+    font-size: 1.5rem;
+}
+.close {
+    cursor: pointer;
+    font-size: 1.5rem;
+}
+.bottom {
+    display: flex;
+    gap: 1rem;
+}
+.position {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+    align-items: center;
+    position: relative;
+    border-radius: 5px;
+    border: 1px solid #cccccc50;
+
+}
+
+.wallet-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+    align-items: center;
+    position: relative;
+    border-radius: 5px;
+    border: 1px solid #cccccc50;
+    text-align: center;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -117,6 +210,7 @@ export default defineComponent({
     }
 }
 
+
 .range-mode-selector {
     display: flex;
     gap: 1rem;
@@ -126,7 +220,12 @@ export default defineComponent({
     display: flex;
     gap: 1rem;
 }
-
+.distribution {
+    width: 100%;
+}
+.slider {
+    width: 100%;
+}
 .percentages {
     display: flex;
     gap: .5rem;
@@ -158,30 +257,27 @@ export default defineComponent({
 .token-percentages {
     display: flex;
     gap: 1rem;
+    text-align: center;
 }
 
 .token {
     display: flex;
     flex-direction: column;
-    gap: .5rem;
 }
 
-.top {
+
+.balances {
     display: flex;
-    justify-content: space-between;
-    width: 100%;
+    gap: 1rem;
+    flex-direction: column;
+    align-items: center;
 }
-.reset {
-    cursor: pointer;
-    font-size: 1.5rem;
-}
-
-.close {
-    cursor: pointer;
-    font-size: 1.5rem;
-}
-
 .selected {
     outline: 2px solid #ccc;
+}
+.open-button {
+    width: fit-content;
+    margin-left: auto;
+    margin-right: auto;
 }
 </style>

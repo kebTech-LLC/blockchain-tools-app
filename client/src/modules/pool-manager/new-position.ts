@@ -1,4 +1,5 @@
-import { poolManager, wallets } from "..";
+import { poolManager, solana } from "..";
+import { Wallet } from "../solana/wallet";
 import { OrcaPool } from "./orca-pool";
 
 enum PoolType {
@@ -8,8 +9,7 @@ enum PoolType {
 }
 
 export class NewPosition {
-    walletKey: string;
-    walletType: string;
+    wallet: Wallet;
     poolType: PoolType;
     rangeLower: number;
     rangeUpper: number;
@@ -26,10 +26,12 @@ export class NewPosition {
     dynamicRangeUpper: number;
     manualRangeLower: number;
     manualRangeUpper: number;
+    walletBalanceTokenA: number;
+    walletBalanceTokenB: number;
+    walletBalanceTotal: number;
 
     constructor(pool: OrcaPool) {
-        this.walletKey = wallets.solanaWalletManager.programmaticWalletKey?.toString() || '';
-        this.walletType = wallets.solanaWalletManager.getWalletType(this.walletKey) || '';
+        this.wallet = solana.programmaticWallet!;
         this.poolType = PoolType.Orca;
         this.rangeLower = 0;
         this.rangeUpper = 0;
@@ -38,13 +40,18 @@ export class NewPosition {
         this.distributionA = 50;
         this.distributionB = 50;
         this.pool = pool;
-        this.amountTotal = 1000;
+        this.amountTotal = 0;
         this.dynamicRange = true;
         this.dynamicRangeLower = 0;
         this.dynamicRangeUpper = 0;
         this.manualRangeLower = 0;
         this.manualRangeUpper = 0;
+        this.walletBalanceTokenA = 0;
+        this.walletBalanceTokenB = 0;
+        this.walletBalanceTotal = 0;
         this.adjustPercentage(1);
+        this.calculateWalletBalance();
+       
     }
 
     open() {
@@ -63,6 +70,19 @@ export class NewPosition {
         this.percentage = percentage / 100;
     }
 
+    calculateWalletBalance() {
+        this.wallet.getTokenBalance(this.pool.tokenMintA)
+            .then(balance => {
+                this.walletBalanceTokenA = balance;
+                this.wallet.getTokenBalance(this.pool.tokenMintB)
+                    .then(balance => {
+                        this.walletBalanceTokenB = balance;
+                        this.walletBalanceTotal = this.walletBalanceTokenA + this.walletBalanceTokenB;
+                        this.amountTotal = this.walletBalanceTotal;
+                    });
+            });
+    }
+
     calculateDynamicRange() {
         const factor = this.pool.tickerPrice * this.percentage;
         this.dynamicRangeLower = (this.pool.tickerPrice - factor);
@@ -77,9 +97,24 @@ export class NewPosition {
         } else {
             this.rangeLower = this.manualRangeLower;
             this.rangeUpper = this.manualRangeUpper;
+            this.distribution = (this.pool.tickerPrice - this.rangeLower) / (this.rangeUpper - this.rangeLower) * 100;
+            this.percentage = (this.rangeUpper - this.rangeLower) / this.pool.tickerPrice;
         }
-        this.distributionA = this.distribution;
-        this.distributionB = 100 - this.distribution;
-        console.log(this)
+
+        this.distributionA = Math.max(0, Math.min(100, this.distribution));
+        this.distributionB = Math.max(0, Math.min(100, 100 - this.distribution));
+
+        this.amountA = this.amountTotal * this.distributionA / 100;
+        this.amountB = this.amountTotal * this.distributionB / 100;
+
+        this.rangeLower = this.distributionA
+
+        console.log(this);
+    }
+
+    reset() {
+        const pool = this.pool;
+        poolManager.closeNewPosition();
+        poolManager.setupNewPosition(pool);
     }
 }

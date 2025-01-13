@@ -2,7 +2,6 @@ import api from "../server/api";
 import { ManagedPosition } from "./managed-position";
 import { OrcaPool } from "./orca-pool";
 import { NewPosition } from "./new-position";
-import { wallets } from "..";
 
 export class PoolManager {
     managedPositions: ManagedPosition[] = [];
