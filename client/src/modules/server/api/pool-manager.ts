@@ -1,4 +1,5 @@
 import { server } from "@/modules"
+import { TokenSwap } from "@/modules/orca/token-swap"
 import { ManagedPosition } from "@/modules/pool-manager/managed-position"
 import { NewPosition } from "@/modules/pool-manager/new-position"
 import { OrcaPool } from "@/modules/pool-manager/orca-pool"
@@ -39,30 +40,25 @@ export default {
                     .then(r => ok(r.data))
                     .catch(e => err(e))
             })
+        },
+        openPositionInstruction: (position: NewPosition): Promise<any> => {
+            return new Promise((ok, err) => {
+                server.post(resource, 'open-position-instruction', position.toSnakeCase())
+                    .then(r => ok(r.data))
+                    .catch(e => err(e))
+            })
         }
     },
     openPosition: (position: NewPosition): Promise<any> => {
         return new Promise((ok, err) => {
-            server.post(resource, 'open-position', {
-                wallet: position.wallet,
-                pool_type: position.poolType,
-                range_lower: position.rangeLower,
-                range_upper: position.rangeUpper,
-                pool_address: position.pool.address,
-                amount_a: position.amountA,
-                amount_b: position.amountB,
-                amount_total: position.amountTotal,
-                wallet_balance_token_a: position.walletBalanceTokenA,
-                wallet_balance_token_b: position.walletBalanceTokenB,
-                wallet_balance_total: position.walletBalanceTotal,
-            })
+            server.post(resource, 'open-position', position.toSnakeCase())
                 .then(r => ok(r.data))
                 .catch(e => err(e))
         })
     },
     closePosition: (position: ManagedPosition): Promise<any> => {
         return new Promise((ok, err) => {
-            server.put(resource, 'close-position', position)
+            server.put(resource, 'close-position', position.toSnakeCase())
                 .then(r => ok(r.data))
                 .catch(e => err(e))
         })
@@ -90,5 +86,11 @@ export default {
                 .catch(e => err(e))
         })
     },
-    
+    swapTokens: (tokenSwap: TokenSwap): Promise<any> => {
+        return new Promise((ok, err) => {
+            server.post(resource, 'swap-tokens', tokenSwap.toSnakeCase())
+                .then(r => ok(r.data))
+                .catch(e => err(e))
+        })
+    }
 }

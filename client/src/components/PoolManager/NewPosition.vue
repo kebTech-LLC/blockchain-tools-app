@@ -90,10 +90,27 @@
                         <div class="token-amount">${{ (position.walletBalanceTokenA + position.walletBalanceTokenB).toFixed(2) }}</div>
                     </div>
                 </div>
+                <div class="swap">
+                    <div class="token">
+                        <div class="token-symbol">{{ swapper.tokenA.symbol }}</div>
+                        <input type="number" @change="handlePriceChange(swapper.tokenA)" v-model="swapper.amountA" />
+                    </div>
+                    <button @click="() => {
+                        const oldA = swapper.tokenA;
+                        const oldB = swapper.tokenB;
+                        swapper.tokenA = oldB;
+                        swapper.tokenB = oldA;
+                        swapper.amountA = 0
+                        swapper.amountB = 0
+                    }">↕️</button>
+                    <div class="token">
+                        <div class="token-symbol">{{ swapper.tokenB.symbol }}</div>
+                        <input type="number" @change="handlePriceChange(swapper.tokenB)" v-model="swapper.amountB" />
+                    </div>
+                    <button @click="swap()">Swap</button>
+                </div>
             </div>
         </div>
-        
-        
         
        
         <button class="open-button" @click="poolManager.openPosition(position)">Open Position</button>
@@ -102,7 +119,9 @@
 
 <script lang="ts">
 import { poolManager, solana } from '@/modules';
-import { computed, defineComponent, ref, watchEffect } from 'vue';
+import { SwapInstructions } from '@/modules/orca/swap-instructions';
+import { TokenSwap } from '@/modules/orca/token-swap';
+import { computed, defineComponent, reactive, ref, watchEffect } from 'vue';
 
 export default defineComponent({
     setup () {
@@ -117,14 +136,53 @@ export default defineComponent({
         watchEffect(() => {
             position.calculateWalletBalance();
             
-        })
+        });
+
+        const swapper = reactive({
+            tokenA: position.pool.tokenA,
+            tokenB: position.pool.tokenB,
+            amountA: 0,
+            amountB: 0,
+        });
+
+        const swap = async() => {
+            const amount = Math.round(swapper.amountB * Math.pow(10, swapper.tokenB.decimals));
+            const tokenSwap = new TokenSwap(position.wallet.pubkey.toString(), position.pool.address, amount, false, swapper.tokenB.address);
+            const response = await tokenSwap.swap();
+            console.log(response);
+            const swapInstructions = new SwapInstructions(response)
+            console.log('swapInstructions', swapInstructions);
+            await solana.executeInstructions(swapInstructions, position.wallet);
+            position.calculateWalletBalance();
+        };
+
+        const handlePriceChange = (token) => {
+            if (token === swapper.tokenA) {
+                // swapper.amountB = swapper.amountA * position.pool.tickerPrice;
+                if (swapper.tokenA === position.pool.tokenA) {
+                    swapper.amountB = swapper.amountA * position.pool.tickerPrice;
+                } else {
+                    swapper.amountB = swapper.amountA / position.pool.tickerPrice;
+                }
+                
+            } else {
+                if (swapper.tokenA === position.pool.tokenA) {
+                    swapper.amountA = swapper.amountB / position.pool.tickerPrice;
+                } else {
+                    swapper.amountA = swapper.amountB * position.pool.tickerPrice;
+                }
+            }
+        };
 
         return {
             poolManager,
             position,
             solana,
             percentageOptions,
-            customPercentage
+            customPercentage,
+            swapper,
+            swap,
+            handlePriceChange
         }
     }
 })
@@ -225,6 +283,7 @@ export default defineComponent({
 }
 .slider {
     width: 100%;
+    direction: rtl;
 }
 .percentages {
     display: flex;

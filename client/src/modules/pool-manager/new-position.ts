@@ -1,12 +1,8 @@
+import { PoolType } from ".";
 import { poolManager, solana } from "..";
 import { Wallet } from "../solana/wallet";
+import utils from "../utils";
 import { OrcaPool } from "./orca-pool";
-
-enum PoolType {
-    Orca,
-    Raydium,
-    Serum
-}
 
 export class NewPosition {
     wallet: Wallet;
@@ -52,6 +48,23 @@ export class NewPosition {
         this.adjustPercentage(1);
         this.calculateWalletBalance();
        
+    }
+    
+    toSnakeCase() {
+        return  {
+            wallet: this.wallet,
+            pool_type: this.poolType,
+            range_lower: this.rangeLower,
+            range_upper: this.rangeUpper,
+            pool_address: this.pool.address,
+            // amount_a: Math.round(this.amountA / this.pool.tickerPrice),
+            amount_a: utils.floatToUInt(this.amountA / this.pool.tickerPrice, this.pool.tokenA.decimals),
+            amount_b: utils.floatToUInt(this.amountB, this.pool.tokenB.decimals),
+            amount_total: this.amountTotal,
+            wallet_balance_token_a: this.walletBalanceTokenA,
+            wallet_balance_token_b: this.walletBalanceTokenB,
+            wallet_balance_total: this.walletBalanceTotal,
+        }
     }
 
     open() {
@@ -101,13 +114,11 @@ export class NewPosition {
             this.percentage = (this.rangeUpper - this.rangeLower) / this.pool.tickerPrice;
         }
 
-        this.distributionA = Math.max(0, Math.min(100, this.distribution));
-        this.distributionB = Math.max(0, Math.min(100, 100 - this.distribution));
-
+        this.distributionA = Math.max(0, Math.min(100, 100 - this.distribution));
+        this.distributionB = Math.max(0, Math.min(100, this.distribution));
+        
         this.amountA = this.amountTotal * this.distributionA / 100;
         this.amountB = this.amountTotal * this.distributionB / 100;
-
-        this.rangeLower = this.distributionA
 
         console.log(this);
     }

@@ -2,6 +2,16 @@ import api from "../server/api";
 import { ManagedPosition } from "./managed-position";
 import { OrcaPool } from "./orca-pool";
 import { NewPosition } from "./new-position";
+import { solana } from "..";
+import { OpenPositionInstruction } from "../orca/open-position-instruction";
+import { ClosePositionInstruction } from "../orca/close-position-instruction";
+import { Wallet } from "../solana/wallet";
+
+export enum PoolType {
+    Orca = 'Orca',
+    Raydium = 'Raydium',
+    Serum = 'Serum',
+}
 
 export class PoolManager {
     managedPositions: ManagedPosition[] = [];
@@ -31,9 +41,14 @@ export class PoolManager {
     }
 
     async removeManagedPositions(positions: ManagedPosition[]) {
-        this.managedPositions = this.managedPositions.filter(
-            (managedPosition) => !positions.includes(managedPosition)
-        );
+        positions.forEach((position) => {
+            const index = this.managedPositions.findIndex(
+                (managedPosition) => managedPosition.address === position.address
+            );
+            if (index > -1) {
+                this.managedPositions.splice(index, 1);
+            }
+        });
     }
 
     async updateManagedPositions(positions: ManagedPosition[]) {
@@ -58,8 +73,18 @@ export class PoolManager {
     }
 
     async openPosition(position: NewPosition) {
-        const openedPosition = await api.poolManager.openPosition(position);
-        console.log('opened position', openedPosition);
+        const data = await api.poolManager.openPosition(position);
+        const openPositionInstruction = new OpenPositionInstruction(data);
+        await solana.executeInstructions(openPositionInstruction, position.wallet);
+    }
+
+    async closePosition(position: ManagedPosition) {
+        const data = await api.poolManager.closePosition(position);
+        console.log('data', data);
+        const closePositionInstruction = new ClosePositionInstruction(data);
+        console.log('closePositionInstruction', closePositionInstruction);
+        const wallet = solana.getWallet(position.walletKey)!;
+        await solana.executeInstructions(closePositionInstruction, wallet);
     }
 
 }

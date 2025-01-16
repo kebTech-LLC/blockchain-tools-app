@@ -1,4 +1,4 @@
-import { Connection, LAMPORTS_PER_SOL, PublicKey, clusterApiUrl } from '@solana/web3.js';
+import { Connection, LAMPORTS_PER_SOL, PublicKey, Transaction, clusterApiUrl } from '@solana/web3.js';
 import api from '../server/api';
 import { poolManager, solana } from '..';
 
@@ -78,6 +78,29 @@ export class Wallet {
             };
         } catch (error) {
             console.error('Signing failed:', error);
+            return null;
+        }
+    }
+    
+    async signTransaction(transaction: Transaction): Promise<Transaction | null> {
+        const provider = window['solana'];
+        if (!provider || !provider.isPhantom) {
+            console.error('Phantom Wallet not found. Please install it.');
+            return null;
+        }
+
+        try {
+            // Ensure the transaction is signed by the wallet's public key
+            transaction.feePayer = this.pubkey;
+            transaction.recentBlockhash = (await solana.client.getRecentBlockhash()).blockhash;
+
+            // Use the provider to sign the transaction
+            const signedTransaction = await provider.signTransaction(transaction);
+
+            console.log('Transaction signed:', signedTransaction);
+            return signedTransaction;
+        } catch (error) {
+            console.error('Signing transaction failed:', error);
             return null;
         }
     }

@@ -1,7 +1,10 @@
-import { Connection, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
+import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js";
 import { Wallet } from "./wallet";
 import api from "../server/api";
-import { ticker } from "..";
+import { solana, ticker } from "..";
+import { OpenPositionInstruction } from "../orca/open-position-instruction";
+import { ClosePositionInstruction } from "../orca/close-position-instruction";
+import { SwapInstructions } from "../orca/swap-instructions";
 
 const TOKEN_PROGRAM_KEY = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
 const SOLANA_TOKEN_MINT = 'So11111111111111111111111111111111111111112';
@@ -11,7 +14,7 @@ export class Solana {
     wallets: Wallet[]
 
     constructor() {
-        this.client = new Connection(this.rpcUrls.alchemy, 'confirmed');
+        this.client = new Connection(this.rpcUrls.quicknode, 'confirmed');
         this.wallets = [];
     }
 
@@ -74,6 +77,54 @@ export class Solana {
                 mint: new PublicKey(tokenMint)
             });
             return tokenAccount.value[0]?.account.data.parsed.info.tokenAmount.uiAmount || 0;
+        }
+    }
+
+    async executeInstructions(positionInstructions: OpenPositionInstruction | ClosePositionInstruction | SwapInstructions, wallet: Wallet) {
+        try {
+            // Create a new transaction
+            const transaction = new Transaction();
+    
+            // Add the instructions to the transaction
+            positionInstructions.instructions.forEach((instruction) => {
+                transaction.add(instruction);
+            });
+    
+            // Set the fee payer
+            transaction.feePayer = wallet.pubkey;
+    
+            // Fetch the recent blockhash
+            const latestBlockhash = await solana.client.getLatestBlockhash();
+            const blockhash = latestBlockhash.blockhash;
+            transaction.recentBlockhash = blockhash;
+            const lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
+    
+            // Add additional signers to the transaction if any
+            const additionalSigners = positionInstructions.additionalSigners;
+    
+            // Sign the transaction using the wallet
+            const signedTransaction = await wallet.signTransaction(transaction);
+    
+            if (!signedTransaction) {
+                console.error('Transaction signing failed.');
+                return;
+            }
+            
+    
+            // Partial sign with additional signers if provided
+            if (additionalSigners.length > 0) {
+                additionalSigners.forEach((signer) => signedTransaction.partialSign(signer));
+            }
+    
+            // Send the transaction
+            const signature = await solana.client.sendRawTransaction(signedTransaction.serialize());
+            // await solana.client.confirmTransaction(signature, 'confirmed');
+
+            await solana.client.confirmTransaction({ signature, blockhash, lastValidBlockHeight });
+    
+            console.log('Transaction successfully executed with signature:', signature);
+        } catch (error) {
+            console.error('Error executing instructions:', error);
         }
     }
 }

@@ -4,8 +4,7 @@ use cnctd_server::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use solana::{pool_manager::{new_position::NewPosition, PoolManager}, rpc::RpcUrl, wallet::Wallet};
-use crate::router::rest::Resource;
+use solana::{pool_manager::{managed_position::ManagedPosition, new_position::NewPosition, PoolManager}, wallet::Wallet};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct DataIn {
@@ -17,6 +16,7 @@ enum Operation {
     AllPositions,
     OpenPosition,
     ClosePosition,
+    SwapTokens,
     ConnectLocalWallet,
     DisconnectLocalWallet,
     ProgrammaticWalletPubkey,
@@ -30,6 +30,7 @@ impl Operation {
             "all-positions" => Operation::AllPositions,
             "open-position" => Operation::OpenPosition,
             "close-position" => Operation::ClosePosition,
+            "swap-tokens" => Operation::SwapTokens,
             "connect-local-wallet" => Operation::ConnectLocalWallet,
             "disconnect-local-wallet" => Operation::DisconnectLocalWallet,
             "programmatic-wallet-pubkey" => Operation::ProgrammaticWalletPubkey,
@@ -82,14 +83,14 @@ pub async fn route_pool_manager(
             Operation::ProgrammaticWalletPubkey => {
                 let wallet_pubkey = Wallet::get_programmatic_pubkey().map_err(|e| internal_server_error!(e))?;
 
-                Wallet::get_sol_balance(&RpcUrl::solana_mainnet(), wallet_pubkey).await.map_err(|e| internal_server_error!(e))?;
+                // Wallet::get_sol_balance(&RpcUrl::solana_mainnet(), wallet_pubkey).await.map_err(|e| internal_server_error!(e))?;
 
                 Ok(success_data!(json!(wallet_pubkey.to_string())))
             }
             Operation::StoredLocalWalletPubkey => {
                 let wallet_pubkey = Wallet::get_stored_local_wallet_pubkey().map_err(|e| internal_server_error!(e))?;
 
-                Wallet::get_sol_balance(&RpcUrl::solana_mainnet(), wallet_pubkey).await.map_err(|e| internal_server_error!(e))?;
+                // Wallet::get_sol_balance(&RpcUrl::solana_mainnet(), wallet_pubkey).await.map_err(|e| internal_server_error!(e))?;
 
                 Ok(success_data!(json!(wallet_pubkey.to_string())))
             }
@@ -97,21 +98,32 @@ pub async fn route_pool_manager(
         },
         HttpMethod::POST => match operation {
             Operation::OpenPosition => {
+                println!("incoming data: {:?}", data_val);
                 let new_position: NewPosition = serde_json::from_value(data_val).map_err(|e| bad_request!(e))?;
 
                 println!("Opening position with new_position: {:?}", new_position);
-                PoolManager::open_position(new_position).await.map_err(|e| internal_server_error!(e))?;
+                let open_position_instructions = PoolManager::open_position(new_position).await.map_err(|e| internal_server_error!(e))?;
 
 
-                Ok(success_msg!("Position opened"))
+                Ok(success_data!(json!(open_position_instructions)))
+            }
+            Operation::SwapTokens => {
+                println!("Swapping tokens with data: {:?}", data_val);
+                let token_swap = serde_json::from_value(data_val).map_err(|e| bad_request!(e))?;
+                let swap_instructions = PoolManager::swap_tokens(token_swap).await.map_err(|e| internal_server_error!(e))?;
+
+                Ok(success_data!(json!(swap_instructions)))
             }
             _ => Err(bad_request!("Invalid operation for POST")),
         },
         HttpMethod::PUT => match operation {
             Operation::ClosePosition => {
                 println!("Closing position with data: {:?}", data_val);
+                let managed_position: ManagedPosition = serde_json::from_value(data_val).map_err(|e| bad_request!(e))?;
 
-                Ok(success_msg!("Position closed"))
+                let close_position_instructions = PoolManager::close_position(managed_position).await.map_err(|e| internal_server_error!(e))?;
+
+                Ok(success_data!(json!(close_position_instructions)))
             }
             Operation::ConnectLocalWallet => {
                 let wallet_key_string = data.wallet_key.ok_or_else(|| bad_request!("Missing wallet key"))?;

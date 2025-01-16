@@ -1,5 +1,4 @@
-import { ticker } from "..";
-import api from "../server/api";
+import { poolManager, ticker } from "..";
 
 export class ManagedPosition {
     address: string;
@@ -20,6 +19,8 @@ export class ManagedPosition {
     rangeUpper: number;
     rewardInfos: { amountOwed: number; growthInsideCheckpoint: number }[];
     rewardsOwed: number[];
+    sqrtPrice: number;
+    tickSpacing: number;
     tokenA: {
         address: string;
         decimals: number;
@@ -65,6 +66,8 @@ export class ManagedPosition {
             growthInsideCheckpoint: info.growth_inside_checkpoint,
         }));
         this.rewardsOwed = data.rewards_owed;
+        this.sqrtPrice = data.sqrt_price;
+        this.tickSpacing = data.tick_spacing;
         this.tokenA = {
             address: data.token_a.address,
             decimals: data.token_a.decimals,
@@ -86,6 +89,55 @@ export class ManagedPosition {
         this.yieldTokenB = data.yield_token_b;
         this.yieldTokenBUsd = data.yield_token_b_usd;
         this.yieldTotalUsd = data.yield_total_usd;
+    }
+
+    toSnakeCase() {
+        return {
+            address: this.address,
+            balance_token_a: this.balanceTokenA,
+            balance_token_a_percentage: this.balanceTokenAPercentage,
+            balance_token_a_usd: this.balanceTokenAUsd,
+            balance_token_b: this.balanceTokenB,
+            balance_token_b_percentage: this.balanceTokenBPercentage,
+            balance_token_b_usd: this.balanceTokenBUsd,
+            balance_total_usd: this.balanceTotalUsd,
+            created_at: this.createdAt,
+            current_price: this.currentPrice,
+            in_range: this.inRange,
+            pool_address: this.poolAddress,
+            pool_type: this.poolType,
+            position_mint: this.positionMint,
+            range_lower: this.rangeLower,
+            range_upper: this.rangeUpper,
+            reward_infos: this.rewardInfos.map(info => ({
+                amount_owed: info.amountOwed,
+                growth_inside_checkpoint: info.growthInsideCheckpoint,
+            })),
+            rewards_owed: this.rewardsOwed,
+            tick_spacing: this.tickSpacing,
+            sqrt_price: this.sqrtPrice,
+            token_a: {
+                address: this.tokenA.address,
+                decimals: this.tokenA.decimals,
+                is_stablecoin: this.tokenA.isStablecoin,
+                name: this.tokenA.name,
+                symbol: this.tokenA.symbol,
+            },
+            token_b: {
+                address: this.tokenB.address,
+                decimals: this.tokenB.decimals,
+                is_stablecoin: this.tokenB.isStablecoin,
+                name: this.tokenB.name,
+                symbol: this.tokenB.symbol,
+            },
+            updated_at: this.updatedAt,
+            wallet_key: this.walletKey,
+            yield_token_a: this.yieldTokenA,
+            yield_token_a_usd: this.yieldTokenAUsd,
+            yield_token_b: this.yieldTokenB,
+            yield_token_b_usd: this.yieldTokenBUsd,
+            yield_total_usd: this.yieldTotalUsd,
+        };
     }
   
     get tickerPrice() {
@@ -117,7 +169,7 @@ export class ManagedPosition {
     }
 
     async close() {
-        await api.poolManager.closePosition(this);
+        await poolManager.closePosition(this);
         console.log('closed position', this);
     }
 }

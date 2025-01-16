@@ -44,7 +44,7 @@ export default defineComponent({
 }
 .positions {
     display: flex;
-    flex-direction: column;
+    align-items: center;
     gap: 1rem;
     padding: 1rem;
     position: relative;
