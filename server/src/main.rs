@@ -1,5 +1,5 @@
 use std::{env, sync::Arc, thread};
-use centralized_marketplaces::coinbase::Coinbase;
+// use centralized_marketplaces::coinbase::Coinbase;
 use cnctd_server::{
     router::message::Message, server::{CnctdServer, ServerConfig}, socket::SocketConfig
 };
@@ -80,9 +80,9 @@ async fn main() {
     //     println!("Database initialized.");
     // }
 
-    let coinbase_future = async {
-        Coinbase::start_sol_websocket().await;
-    };
+    // let coinbase_future = async {
+    //     Coinbase::start_sol_websocket().await;
+    // };
   
     // Create the channel
     let (tx, rx) = mpsc::channel::<PoolManagerMessage>(100);

@@ -1,134 +1,164 @@
+use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-
+use std::time::{Duration, SystemTime, UNIX_EPOCH, Instant};
+use tokio::sync::RwLock;
+use tokio::time::{interval_at, sleep_until, Instant as TokioInstant};
 use serde::{Deserialize, Serialize};
-use solana::pool_manager::PoolManager;
-use state::InitCell;
 use tokio_tungstenite::{connect_async, tungstenite::Message};
-use futures_util::{StreamExt, SinkExt}; // For split and async operations
+use futures_util::{StreamExt, SinkExt};
 use url::Url;
-use reqwest::Client;
+use hmac::{Hmac, Mac};
+use sha2::Sha256;
+use base64::{encode as b64_encode, decode as b64_decode};
 use anyhow::{Result, anyhow};
 
-pub static SOL_PRICE: InitCell<Arc<Mutex<CoinbasePriceData>>> = InitCell::new();
+type HmacSha256 = Hmac<Sha256>;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+pub static ORDER_BOOK: InitCell<Arc<RwLock<OrderBookState>>> = InitCell::new();
+
+#[derive(Debug, Clone, Default)]
+pub struct OrderBookState {
+    pub bids: HashMap<String, f64>, // price -> size
+    pub asks: HashMap<String, f64>, // price -> size
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Coinbase {
     pub url: String,
     pub product_ids: Vec<String>,
     pub channels: Vec<String>,
+    pub api_key: String,
+    pub secret_key: String,
+    pub passphrase: String,
 }
 
-#[derive(Debug, Deserialize)]
-struct CoinbaseResponse {
-    data: CoinbasePriceData,
+#[derive(Serialize, Deserialize)]
+struct AuthenticatedSubscribeMessage {
+    r#type: String,
+    product_ids: Vec<String>,
+    channels: Vec<String>,
+    signature: String,
+    key: String,
+    passphrase: String,
+    timestamp: String,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct CoinbasePriceData {
-    base: String,
-    currency: String,
-    amount: String,
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct L2UpdateMessage {
+    r#type: String,
+    product_id: String,
+    changes: Vec<(String, String, String)>, // (side, price, size)
+    time: String,
 }
-
 
 impl Coinbase {
-    pub fn new(url: &str, product_ids: Vec<&str>, channels: Vec<&str>) -> Self {
+    pub fn new(
+        url: &str,
+        product_ids: Vec<&str>,
+        channels: Vec<&str>,
+        api_key: &str,
+        secret_key: &str,
+        passphrase: &str,
+    ) -> Self {
         Coinbase {
             url: url.to_string(),
             product_ids: product_ids.into_iter().map(|s| s.to_string()).collect(),
             channels: channels.into_iter().map(|s| s.to_string()).collect(),
+            api_key: api_key.to_string(),
+            secret_key: secret_key.to_string(),
+            passphrase: passphrase.to_string(),
         }
     }
 
-    pub async fn connect_and_subscribe(&self) {
-        let url = Url::parse(&self.url).expect("Invalid WebSocket URL");
+    fn generate_signature(&self, timestamp: &str, request_path: &str) -> Result<String> {
+        let message = format!("{}GET{}", timestamp, request_path);
+        let decoded_secret = b64_decode(&self.secret_key)
+            .map_err(|_| anyhow!("Failed to decode secret key"))?;
+        let mut mac = HmacSha256::new_from_slice(&decoded_secret)
+            .map_err(|_| anyhow!("Invalid secret key"))?;
+        mac.update(message.as_bytes());
+        let signature = mac.finalize().into_bytes();
+        Ok(b64_encode(signature))
+    }
 
-        // Convert Url to string and connect to the WebSocket
-        let (ws_stream, _) = connect_async(url.to_string()).await.expect("Failed to connect to Coinbase WebSocket");
-        println!("Connected to Coinbase WebSocket!");
+    pub async fn connect_and_subscribe(&self) -> Result<()> {
+        let url = Url::parse(&self.url)?;
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)?
+            .as_secs()
+            .to_string();
+        let signature = self.generate_signature(&timestamp, "/users/self/verify")?;
 
-        let (mut write, mut read) = ws_stream.split();
-
-        // Create subscription message
-        let subscribe_msg = serde_json::to_string(&SubscribeMessage {
+        let subscribe_msg = AuthenticatedSubscribeMessage {
             r#type: "subscribe".to_string(),
             product_ids: self.product_ids.clone(),
             channels: self.channels.clone(),
-        }).expect("Failed to serialize subscribe message");
+            signature,
+            key: self.api_key.clone(),
+            passphrase: self.passphrase.clone(),
+            timestamp,
+        };
+
+        let (ws_stream, _) = connect_async(url).await?;
+        println!("Connected to Coinbase WebSocket!");
+        let (mut write, mut read) = ws_stream.split();
 
         // Send subscription message
-        write.send(Message::Text(subscribe_msg.into())).await.expect("Failed to send subscribe message");
+        let msg = serde_json::to_string(&subscribe_msg)?;
+        write.send(Message::Text(msg)).await?;
         println!("Subscribed to channels: {:?}", self.channels);
 
-        // Keep reading messages in a loop
+        let order_book = Arc::new(RwLock::new(OrderBookState::default()));
+        ORDER_BOOK.set(order_book.clone());
+
+        // Start a loop aligned to seconds
+        let now = Instant::now();
+        let start_time = now + Duration::from_secs(1) - Duration::from_millis(now.elapsed().as_millis() % 1000);
+        let mut interval = interval_at(TokioInstant::from_std(start_time), Duration::from_secs(1));
+
+        tokio::spawn(async move {
+            loop {
+                interval.tick().await;
+
+                // Snapshot the order book state
+                let snapshot = {
+                    let lock = order_book.read().await;
+                    lock.clone()
+                };
+
+                // Process snapshot as needed
+                println!("Order Book Snapshot (Bids: {}, Asks: {})", snapshot.bids.len(), snapshot.asks.len());
+            }
+        });
+
+        // Read WebSocket messages
         while let Some(Ok(msg)) = read.next().await {
             if let Message::Text(text) = msg {
-                println!("Received: {}", text);
-                // PoolManager::test_orca_ipc().await.expect("Failed to test Orca IPC");
+                if let Ok(update) = serde_json::from_str::<L2UpdateMessage>(&text) {
+                    let mut lock = order_book.write().await;
+                    for (side, price, size) in update.changes {
+                        let price = price.parse::<f64>().unwrap_or(0.0);
+                        let size = size.parse::<f64>().unwrap_or(0.0);
+
+                        if side == "buy" {
+                            if size == 0.0 {
+                                lock.bids.remove(&price.to_string());
+                            } else {
+                                lock.bids.insert(price.to_string(), size);
+                            }
+                        } else if side == "sell" {
+                            if size == 0.0 {
+                                lock.asks.remove(&price.to_string());
+                            } else {
+                                lock.asks.insert(price.to_string(), size);
+                            }
+                        }
+                    }
+                }
             }
         }
+
+        Ok(())
     }
-
-    pub async fn get_sol_usd_price() -> Result<f64> {
-        let url = "https://api.coinbase.com/v2/prices/SOL-USD/spot";
-    
-        // Create an HTTP client
-        let client = Client::new();
-    
-        // Make a GET request to the Coinbase API
-        let response: CoinbaseResponse = client
-            .get(url)
-            .send()
-            .await?
-            .json()
-            .await?;
-    
-        // Parse the price as f64
-        let price = response
-            .data
-            .amount
-            .parse::<f64>()
-            .map_err(|e| anyhow!("Failed to parse price: {}", e))?;
-    
-        Ok(price)
-    }
-
-    pub async fn start_sol_websocket() {
-        let coinbase = Coinbase::new(
-            "wss://ws-feed.pro.coinbase.com",
-            vec!["SOL-USD"],
-            vec!["ticker"],
-        );
-
-        coinbase.connect_and_subscribe().await;
-
-    }
-}
-
-#[derive(Serialize, Deserialize)]
-struct SubscribeMessage {
-    r#type: String,
-    product_ids: Vec<String>,
-    channels: Vec<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct TickerMessage {
-    r#type: String,
-    sequence: u64,
-    product_id: String,
-    price: String,
-    open_24h: String,
-    volume_24h: String,
-    low_24h: String,
-    high_24h: String,
-    volume_30d: String,
-    best_bid: String,
-    best_bid_size: String,
-    best_ask: String,
-    best_ask_size: String,
-    side: String,
-    time: String,
-    trade_id: u64,
-    last_size: String,
 }
