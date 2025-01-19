@@ -4,6 +4,30 @@ import { Wallet } from "../solana/wallet";
 import utils from "../utils";
 import { OrcaPool } from "./orca-pool";
 
+export class NewProgrammaticPosition {
+    poolType: PoolType;
+    poolAddress: string;
+    tokenMintA: string;
+    tokenMintB: string;
+
+    constructor(pool: OrcaPool) {
+        this.poolType = PoolType.Orca;
+        this.poolAddress = pool.address;
+        this.tokenMintA = pool.tokenMintA;
+        this.tokenMintB = pool.tokenMintB;
+    }
+
+    toSnakeCase() {
+        return {
+            pool_type: this.poolType,
+            pool_address: this.poolAddress,
+            token_mint_a: this.tokenMintA,
+            token_mint_b: this.tokenMintB,
+        }
+    }
+}
+
+
 export class NewPosition {
     wallet: Wallet;
     poolType: PoolType;

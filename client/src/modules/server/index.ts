@@ -113,7 +113,8 @@ export class Server {
                         msg: responseData.msg,
                         data: responseData.data,
                     };
-                    ok(res);
+                    if (res.success) ok(res)
+                    else err(res.msg)
                 })
                 .catch(e => {
                     console.error('error', e);

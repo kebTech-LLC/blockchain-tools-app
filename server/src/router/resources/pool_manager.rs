@@ -4,7 +4,7 @@ use cnctd_server::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use solana::{pool_manager::{managed_position::ManagedPosition, new_position::NewPosition, PoolManager}, wallet::Wallet};
+use solana::{pool_manager::{managed_position::ManagedPosition, new_position::{NewPosition, NewProgrammaticPosition}, PoolManager}, wallet::Wallet};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct DataIn {
@@ -15,6 +15,7 @@ struct DataIn {
 enum Operation {
     AllPositions,
     OpenPosition,
+    OpenProgrammaticPosition,
     ClosePosition,
     SwapTokens,
     ConnectLocalWallet,
@@ -29,6 +30,7 @@ impl Operation {
         match s {
             "all-positions" => Operation::AllPositions,
             "open-position" => Operation::OpenPosition,
+            "open-programmatic-position" => Operation::OpenProgrammaticPosition,
             "close-position" => Operation::ClosePosition,
             "swap-tokens" => Operation::SwapTokens,
             "connect-local-wallet" => Operation::ConnectLocalWallet,
@@ -106,6 +108,13 @@ pub async fn route_pool_manager(
 
 
                 Ok(success_data!(json!(open_position_instructions)))
+            }
+            Operation::OpenProgrammaticPosition => {
+                let new_position: NewProgrammaticPosition = serde_json::from_value(data_val).map_err(|e| bad_request!(e))?;
+
+                PoolManager::open_programmatic_position(new_position).await.map_err(|e| internal_server_error!(e))?;
+
+                Ok(success_msg!("Ok"))
             }
             Operation::SwapTokens => {
                 println!("Swapping tokens with data: {:?}", data_val);

@@ -1,7 +1,7 @@
 import api from "../server/api";
 import { ManagedPosition } from "./managed-position";
 import { OrcaPool } from "./orca-pool";
-import { NewPosition } from "./new-position";
+import { NewPosition, NewProgrammaticPosition } from "./new-position";
 import { solana } from "..";
 import { OpenPositionInstruction } from "../orca/open-position-instruction";
 import { ClosePositionInstruction } from "../orca/close-position-instruction";
@@ -87,4 +87,14 @@ export class PoolManager {
         await solana.executeInstructions(closePositionInstruction, wallet);
     }
 
+    async openProgrammaticPosition(pool: OrcaPool) {
+        try {
+            const newPosition = new NewProgrammaticPosition(pool);
+            const data = await api.poolManager.openProgrammaticPosition(newPosition);
+            console.log('data', data);
+        } catch (error) {
+            console.error('error', error);
+        }
+     
+    }
 }

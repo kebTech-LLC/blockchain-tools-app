@@ -1,7 +1,7 @@
 import { server } from "@/modules"
 import { TokenSwap } from "@/modules/orca/token-swap"
 import { ManagedPosition } from "@/modules/pool-manager/managed-position"
-import { NewPosition } from "@/modules/pool-manager/new-position"
+import { NewPosition, NewProgrammaticPosition } from "@/modules/pool-manager/new-position"
 import { OrcaPool } from "@/modules/pool-manager/orca-pool"
 
 const resource = 'pool_manager'
@@ -59,6 +59,13 @@ export default {
     closePosition: (position: ManagedPosition): Promise<any> => {
         return new Promise((ok, err) => {
             server.put(resource, 'close-position', position.toSnakeCase())
+                .then(r => ok(r.data))
+                .catch(e => err(e))
+        })
+    },
+    openProgrammaticPosition: (position: NewProgrammaticPosition): Promise<any> => {
+        return new Promise((ok, err) => {
+            server.post(resource, 'open-programmatic-position', position.toSnakeCase())
                 .then(r => ok(r.data))
                 .catch(e => err(e))
         })

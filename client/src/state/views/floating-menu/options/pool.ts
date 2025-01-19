@@ -7,7 +7,9 @@ export class PoolOptions {
         const options: FloatingMenuOption[] = [];
         
         const openOption = new FloatingMenuOption('Open New Position', LineType.Content, () => poolManager.setupNewPosition(orcaPool));
+        const openProgrammaticPosition = new FloatingMenuOption('Open Programmatic Position', LineType.Content, () => poolManager.openProgrammaticPosition(orcaPool));
 
+        options.unshift(openProgrammaticPosition)
         options.unshift(openOption);
 
         return options;
