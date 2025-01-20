@@ -5,7 +5,8 @@ export class Ticker {
         'SOL': number,
         'BTC': number,
         'ETH': number,  
-    }
+    };
+    stats: string[];
 
     constructor() {
         this.prices = {
@@ -13,6 +14,7 @@ export class Ticker {
             'BTC': 0,
             'ETH': 0,
         };
+        this.stats = [];
         this.initializeCoinbaseWebSocket();
     }
 

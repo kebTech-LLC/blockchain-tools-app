@@ -1,4 +1,4 @@
-import { poolManager, server } from "@/modules";
+import { poolManager, server, ticker } from "@/modules";
 import { ManagedPosition } from "@/modules/pool-manager/managed-position";
 
 export class IncomingSocketMessage {
@@ -15,7 +15,7 @@ export class IncomingSocketMessage {
     }
 
     route() {
-        console.log('routing', this.channel, this.instruction, this.data);
+        // console.log('routing', this.channel, this.instruction, this.data);
 
         switch (this.channel) {
             // case 'session': {
@@ -55,6 +55,16 @@ export class IncomingSocketMessage {
                         break;
                 }
                 break;
+
+            case 'stats': {
+                switch(this.instruction) {
+                    case 'update':
+                        ticker.stats.length = 0;
+                        ticker.stats = this.data.data;
+                        break;
+                }
+                break;
+            }
             default:
                 console.log('no route for channel', this.channel);
         }

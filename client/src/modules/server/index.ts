@@ -129,7 +129,7 @@ export class Server {
         poolManager.populateManagedPositions();
         console.log('Registering application socket');
         return new Promise((ok, err) => {
-            api.sessions.register()
+            api.sessions.register(['server-info', 'managed-position', 'stats'])
                 .then(async clientId => {
                     if (!clientId) {
                         console.log('No client id returned from server');
