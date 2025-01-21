@@ -78,7 +78,7 @@ pub async fn route_pool_manager(
     match method {
         HttpMethod::GET => match operation {
             Operation::AllPositions => {
-                let positions = PoolManager::get_managed_positions().map_err(|e| internal_server_error!(e))?;
+                let positions = PoolManager::get_managed_positions().await.map_err(|e| internal_server_error!(e))?;
                 println!("Positions: {:?}", positions);
                 Ok(success_data!(json!(positions)))
             }
@@ -112,7 +112,7 @@ pub async fn route_pool_manager(
             Operation::OpenProgrammaticPosition => {
                 let new_position: NewProgrammaticPosition = serde_json::from_value(data_val).map_err(|e| bad_request!(e))?;
 
-                PoolManager::open_programmatic_position(new_position).await.map_err(|e| internal_server_error!(e))?;
+                PoolManager::queue_programmatic_open(new_position).await.map_err(|e| internal_server_error!(e))?;
 
                 Ok(success_msg!("Ok"))
             }
@@ -142,7 +142,7 @@ pub async fn route_pool_manager(
                 Ok(success_data!(json!(wallet_positions)))
             }
             Operation::DisconnectLocalWallet => {
-                let removed_positions = PoolManager::unset_local_wallet_pubkey().map_err(|e| internal_server_error!(e))?;
+                let removed_positions = PoolManager::unset_local_wallet_pubkey().await.map_err(|e| internal_server_error!(e))?;
 
                 Ok(success_data!(json!(removed_positions)))
             }
