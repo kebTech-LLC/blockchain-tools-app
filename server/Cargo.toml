@@ -29,3 +29,4 @@ url = "2.5.4"
 solana = { version = "0.1.0", path = "../../modules/rust/solana" }
 solana-sdk = "2.1.7"
 solana-client = "2.1.7"
+kebtech_utils = { path = "../../modules/rust/utils" }

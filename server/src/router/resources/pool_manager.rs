@@ -4,7 +4,7 @@ use cnctd_server::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use solana::{pool_manager::{managed_position::ManagedPosition, new_position::{NewPosition, NewProgrammaticPosition}, PoolManager}, wallet::Wallet};
+use solana::{pool_manager::{new_position::{NewPosition, NewProgrammaticPosition}, position_manager::managed_position::ManagedPosition, PoolManager}, wallet::Wallet};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct DataIn {
