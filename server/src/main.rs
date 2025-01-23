@@ -120,7 +120,7 @@ async fn main() {
     let rx_future = async move {
         let mut rx = rx;  // make rx mut in this scope
         while let Some(pool_manager_message) = rx.recv().await {
-            println!("Received a new PoolManagerMessage: {:?}", pool_manager_message.message_type);
+            // println!("Received a new PoolManagerMessage: {:?}", pool_manager_message.message_type);
 
             let (channel, instruction, frequency) = match pool_manager_message.message_type {
                 MessageType::UpdatePosition => ("managed-position", "update", pool_manager_message.frequency_seconds),
