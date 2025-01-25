@@ -16,9 +16,14 @@
         <div class="yield">
             <div class="yield-token-a" :title="position.yieldTokenAUsd.toString()">{{ position.yieldTokenAUsd.toFixed(2) }}</div>
             <div class="yield-token-b" :title="position.yieldTokenBUsd.toString()">{{ position.yieldTokenBUsd.toFixed(2) }}</div>
-            <div class="yield-total" :title="position.yieldTotalUsd.toString()">{{ position.yieldTotalUsd.toFixed(2) }}</div>
-            <div class="yield-percent" :title="position.estimated24hYield.toString()">{{ `${position.estimated24hYield.toFixed(2)}% ($${position.estimated24hYieldUsd.toFixed(2)})` }}</div>
+            <div class="yield-total" :title="position.yieldTotalUsd.toString()">${{ position.yieldTotalUsd.toFixed(2) }}</div>
         </div>
+        <div class="timing">
+            <!-- <div class="createdAt">{{ position.timeCreated }}</div> -->
+            <div class="duration">{{ position.durationActive }}</div>  
+        </div>
+        <div class="yield-percent" :title="position.estimated24hYield.toString()">{{ `${position.estimated24hYield.toFixed(2)}% ($${position.estimated24hYieldUsd.toFixed(2)} / 24h)` }}</div>
+        <div class="auto-rebalance">Auto Rebalance {{ position.autoRebalance ? 'On' : 'Off' }}</div>
         <font-awesome-icon class="ellipsis" :icon="['fa', 'ellipsis']" @click.stop="FloatingMenu.open($event, FloatingMenuType.ManagedPosition, position)" />
     </div>
 </template>

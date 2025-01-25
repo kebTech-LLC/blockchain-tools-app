@@ -10,8 +10,11 @@ export class ManagedPositionOptions {
             You will receive ${managedPosition.yieldTokenA.toFixed(2)} ${managedPosition.tokenA.symbol} and ${managedPosition.yieldTokenB.toFixed(2)} ${managedPosition.tokenB.symbol}.`);    
             if (close) managedPosition.close()
         });
+
+        const toggleAutoRebalance = new FloatingMenuOption('Toggle Auto-Rebalance', LineType.Content, () => managedPosition.toggleAutoRebalance());
         
         options.unshift(closeOption);
+        options.unshift(toggleAutoRebalance);
         
         return options;
     }

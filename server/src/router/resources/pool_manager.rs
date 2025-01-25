@@ -22,6 +22,7 @@ enum Operation {
     DisconnectLocalWallet,
     ProgrammaticWalletPubkey,
     StoredLocalWalletPubkey,
+    ToggleAutoRebalance,
     Unrecognized,
 }
 
@@ -37,6 +38,7 @@ impl Operation {
             "disconnect-local-wallet" => Operation::DisconnectLocalWallet,
             "programmatic-wallet-pubkey" => Operation::ProgrammaticWalletPubkey,
             "stored-local-wallet-pubkey" => Operation::StoredLocalWalletPubkey,
+            "toggle-auto-rebalance" => Operation::ToggleAutoRebalance,
             _ => Operation::Unrecognized,
         }
     }
@@ -145,6 +147,12 @@ pub async fn route_pool_manager(
                 let removed_positions = PoolManager::unset_local_wallet_pubkey().await.map_err(|e| internal_server_error!(e))?;
 
                 Ok(success_data!(json!(removed_positions)))
+            }
+            Operation::ToggleAutoRebalance => {
+                let mut managed_position: ManagedPosition = serde_json::from_value(data_val).map_err(|e| bad_request!(e))?;
+                managed_position.toggle_auto_rebalance().await.map_err(|e| internal_server_error!(e))?;
+
+                Ok(success_msg!("Ok"))
             }
             _ => Err(bad_request!("Invalid operation for PUT")),
         },

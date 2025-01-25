@@ -63,6 +63,14 @@ export default {
                 .catch(e => err(e))
         })
     },
+    toggleAutoRebalance: (position: ManagedPosition): Promise<void> => {
+        return new Promise((ok, err) => {
+            console.log('toggling auto-rebalance', position.toSnakeCase())
+            server.put(resource, 'toggle-auto-rebalance', position.toSnakeCase())
+                .then(_r => ok())
+                .catch(e => err(e))
+        })
+    },
     openProgrammaticPosition: (position: NewProgrammaticPosition): Promise<any> => {
         return new Promise((ok, err) => {
             server.post(resource, 'open-programmatic-position', position.toSnakeCase())

@@ -4,7 +4,7 @@ use cnctd_server::{
     router::message::Message, server::{CnctdServer, ServerConfig}, socket::SocketConfig
 };
 use local_ip_address::local_ip;
-use router::{rest::RestRouter, socket::SocketRouter};
+use router::{pool_manager_message::route_pool_manager_message, rest::RestRouter, socket::SocketRouter};
 use serde_json::json;
 use solana::pool_manager::{message::{MessageType, PoolManagerMessage}, PoolManager};
 use tokio::sync::mpsc;
@@ -121,20 +121,8 @@ async fn main() {
         let mut rx = rx;  // make rx mut in this scope
         while let Some(pool_manager_message) = rx.recv().await {
             // println!("Received a new PoolManagerMessage: {:?}", pool_manager_message.message_type);
-
-            let (channel, instruction, frequency) = match pool_manager_message.message_type {
-                MessageType::UpdatePosition => ("managed-position", "update", pool_manager_message.frequency_seconds),
-                MessageType::RemovePosition => ("managed-position", "remove", pool_manager_message.frequency_seconds),
-                MessageType::Stats => ("stats", "update", pool_manager_message.frequency_seconds),
-            };
-
-
-            let message_data = json!({"data": pool_manager_message.data, "frequency": frequency});
-            let message = Message::new(channel, instruction, Some(message_data));
-            match message.broadcast().await {
-                Ok(_) => {},
-                Err(e) => println!("Failed to broadcast managed position: {:?}", e),
-            }
+            route_pool_manager_message(pool_manager_message).await;
+           
         }
     };
 

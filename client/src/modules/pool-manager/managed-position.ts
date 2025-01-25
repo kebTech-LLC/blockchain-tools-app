@@ -1,4 +1,6 @@
 import { poolManager, ticker } from "..";
+import api from "../server/api";
+import utils from "../utils";
 
 export class ManagedPosition {
     address: string;
@@ -19,7 +21,7 @@ export class ManagedPosition {
     rangeUpper: number;
     rewardInfos: { amountOwed: number; growthInsideCheckpoint: number }[];
     rewardsOwed: number[];
-    sqrtPrice: number;
+    sqrtPrice: bigint;
     tickSpacing: number;
     tokenA: {
         address: string;
@@ -42,6 +44,7 @@ export class ManagedPosition {
     yieldTokenB: number;
     yieldTokenBUsd: number;
     yieldTotalUsd: number;
+    autoRebalance: boolean;
 
   
     constructor(data: any) {
@@ -66,7 +69,7 @@ export class ManagedPosition {
             growthInsideCheckpoint: info.growth_inside_checkpoint,
         }));
         this.rewardsOwed = data.rewards_owed;
-        this.sqrtPrice = data.sqrt_price;
+        this.sqrtPrice = BigInt(data.sqrt_price);
         this.tickSpacing = data.tick_spacing;
         this.tokenA = {
             address: data.token_a.address,
@@ -89,6 +92,7 @@ export class ManagedPosition {
         this.yieldTokenB = data.yield_token_b;
         this.yieldTokenBUsd = data.yield_token_b_usd;
         this.yieldTotalUsd = data.yield_total_usd;
+        this.autoRebalance = data.auto_rebalance;
     }
 
     toSnakeCase() {
@@ -103,6 +107,7 @@ export class ManagedPosition {
             balance_total_usd: this.balanceTotalUsd,
             created_at: this.createdAt,
             current_price: this.currentPrice,
+            current_ticker_price: this.tickerPrice,
             in_range: this.inRange,
             pool_address: this.poolAddress,
             pool_type: this.poolType,
@@ -115,7 +120,7 @@ export class ManagedPosition {
             })),
             rewards_owed: this.rewardsOwed,
             tick_spacing: this.tickSpacing,
-            sqrt_price: this.sqrtPrice,
+            sqrt_price: this.sqrtPrice.toString(),
             token_a: {
                 address: this.tokenA.address,
                 decimals: this.tokenA.decimals,
@@ -137,7 +142,19 @@ export class ManagedPosition {
             yield_token_b: this.yieldTokenB,
             yield_token_b_usd: this.yieldTokenBUsd,
             yield_total_usd: this.yieldTotalUsd,
+            auto_rebalance: this.autoRebalance,
         };
+    }
+
+    get timeCreated() {
+        return utils.cleanDate(this.createdAt)
+    }
+
+    get durationActive() {  
+        const now = new Date();
+        const durationMs = now.getTime() - this.createdAt.getTime();
+        const durationMinutes = Math.floor(durationMs / (1000 * 60));
+        return durationMinutes + ' minutes';
     }
   
     get tickerPrice() {
@@ -171,6 +188,11 @@ export class ManagedPosition {
     async close() {
         await poolManager.closePosition(this);
         console.log('closed position', this);
+    }
+
+    async toggleAutoRebalance() {
+        await  api.poolManager.toggleAutoRebalance(this);
+        console.log('toggled auto-rebalance', this);
     }
 }
   
