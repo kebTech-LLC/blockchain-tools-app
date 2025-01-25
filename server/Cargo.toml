@@ -26,9 +26,9 @@ chrono = "0.4.39"
 tokio-tungstenite ={ version = "0.26.1", features = ["native-tls"] }
 futures-util = "0.3.31"
 url = "2.5.4"
-solana = { version = "0.1.0", path = "../../modules/rust/solana" }
+solana = { version = "0.1.0", path = "../../modules/rust/solana", git = "https://github.com/kebTech-LLC/kebtech_solana"  }
 solana-sdk = "2.1.10"
 solana-client = "2.1.10"
-kebtech_utils = { path = "../../modules/rust/utils" }
+kebtech_utils = { path = "../../modules/rust/utils", git = "https://github.com/kebTech-LLC/utils" }
 sea-orm = { version = "1.1.4", features = ["sqlx-postgres", "runtime-tokio-native-tls", "macros", "with-chrono", "with-json", "with-uuid"] }
 google-oauth = "1.11.3"
