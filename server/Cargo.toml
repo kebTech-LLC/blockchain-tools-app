@@ -11,9 +11,7 @@ dotenv = "0.15.0"
 env_logger = "0.11.6"
 jsonwebtoken = "9.3.0"
 local-ip-address = "0.6.3"
-# sea-orm = { version = "1.1.2", features = ["runtime-tokio-native-tls"] }
 serde = { version = "1.0.217", features = ["derive"] }
-# sqlx = { version = "0.8.2", features = ["postgres", "runtime-tokio-native-tls"] }
 time = "0.3.37"
 tokio = { version = "1.43.0", features = ["full"] }
 tokio-test = "0.4.4"
@@ -26,11 +24,9 @@ chrono = "0.4.39"
 tokio-tungstenite ={ version = "0.26.1", features = ["native-tls"] }
 futures-util = "0.3.31"
 url = "2.5.4"
-solana = { git = "https://github.com/kebTech-LLC/kebtech_solana.git"  }
-# solana = { version = "0.1.0", path = "../../modules/rust/solana"  }
+solana = { version = "0.1.0", path = "../../modules/rust/solana"  }
 solana-sdk = "2.1.11"
 solana-client = "2.1.11"
-kebtech_utils = { git = "https://github.com/kebTech-LLC/utils.git" }
-# kebtech_utils = { path = "../../modules/rust/utils" }
+kebtech_utils = { path = "../../modules/rust/utils" }
 sea-orm = { version = "1.1.4", features = ["sqlx-postgres", "runtime-tokio-native-tls", "macros", "with-chrono", "with-json", "with-uuid"] }
 google-oauth = "1.11.3"
