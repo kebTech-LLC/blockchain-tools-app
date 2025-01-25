@@ -73,4 +73,7 @@ export default defineComponent({
 .range {
     color: v-bind("props.position.tickerInRange ? 'green' : 'red'");
 }
+.yield-total {
+    font-weight: bold;
+}
 </style>

@@ -22,6 +22,7 @@ async fn main() {
 
     // Load secrets and environment variables
     let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET not set");
+    let google_client_id = env::var("GOOGLE_CLIENT_ID").expect("GOOGLE_CLIENT_ID not set");
     let server_id = env::var("SERVER_ID").unwrap_or_else(|_| "1".to_string());
     let port_str = env::var("SERVER_PORT").unwrap_or_else(|_| "5050".to_string());
     let client_dir = env::var("CLIENT_DIR").ok();
@@ -29,6 +30,7 @@ async fn main() {
 
     // Initialize shared components
     router::rest::JWT_SECRET.set(jwt_secret.into());
+    router::rest::GOOGLE_CLIENT_ID.set(google_client_id.into());
     let rest_router = RestRouter;
     let socket_router = SocketRouter;
 

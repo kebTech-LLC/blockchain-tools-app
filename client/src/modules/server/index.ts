@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { IncomingSocketMessage } from './router';
 import api from './api';
 import { Http } from '@capacitor-community/http';
-import { poolManager } from '..';
+import { auth, poolManager } from '..';
 
 
 const host = location.host;
@@ -98,7 +98,7 @@ export class Server {
                 method: requestMethod,
                 headers: {
                     'Content-Type': 'application/json',
-                    // 'Authorization': auth.userSession?.access_token || '',
+                    'Authorization': auth.jwt || '',
                     'Client-Id': this.clientId || '',
                 },
                 data: [HttpMethod.POST, HttpMethod.PUT].includes(requestMethod) ? serializedData : undefined,

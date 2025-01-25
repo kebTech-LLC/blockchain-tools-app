@@ -6,12 +6,14 @@ use std::{future::Future, pin::Pin};
 
 // use crate::{auth::Authentication, services::resource_service::ResourceService};
 use cnctd_server::{auth::CnctdAuth, router::{error::{ErrorCode, ErrorResponse}, response::SuccessResponse, HttpMethod, RestRouterFunction}, server::CnctdServer};
+use google_oauth::AsyncClient;
 use serde_json::Value;
 use state::InitCell;
 use anyhow::anyhow;
 use uuid::Uuid;
 
 pub static JWT_SECRET: InitCell<Vec<u8>> = InitCell::new();
+pub static GOOGLE_CLIENT_ID: InitCell<String> = InitCell::new();
 
 #[derive(Debug)]
 pub enum Resource {
@@ -33,12 +35,18 @@ impl Resource {
         }
     }
 
-    pub fn authenticate(auth_token: Option<String>) -> anyhow::Result<Uuid> {
-        let secret = JWT_SECRET.try_get().ok_or(anyhow!("JWT secret not set"))?;
+    pub async fn authenticate(auth_token: Option<String>) -> anyhow::Result<String> {
+        // let secret = JWT_SECRET.try_get().ok_or(anyhow!("JWT secret not set"))?;
+        let client_id = GOOGLE_CLIENT_ID.try_get().ok_or(anyhow!("Google client ID not set"))?;
         match auth_token {
-            Some(jwt) => {
-                let user_id = CnctdAuth::verify_auth_token(secret.to_owned(), &jwt)?;
-                Ok(Uuid::parse_str(&user_id)?)
+            Some(id_token) => {
+                let client = AsyncClient::new(client_id);
+                // let user_id = CnctdAuth::verify_auth_token(secret.to_owned(), &jwt)?;
+                let payload = client.validate_id_token(id_token).await?;
+                let user_id = payload.sub;
+                println!("User ID: {}", user_id);
+                // Ok(Uuid::parse_str(&user_id)?)
+                Ok(user_id)
             }
             None => return Err(anyhow!("auth token required"))
         }
@@ -105,3 +113,4 @@ fn parse_path(path: &str) -> (String, Option<String>) {
     let operation = parts.get(1).map(|s| s.to_string());
     (resource, operation)
 }
+

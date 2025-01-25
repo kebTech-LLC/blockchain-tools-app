@@ -1,4 +1,5 @@
 <template>
+	<GoogleLogin v-show="!auth.loggedIn" class="google-login" :callback="auth.googleCallback" prompt autoLogin />
 	<Ticker />
 	<WalletManager />
 	<PoolManager />
@@ -12,7 +13,7 @@ import FloatingMenu from './components/FloatingMenu/FloatingMenu.vue';
 import PoolManager from './components/PoolManager/PoolManager.vue';
 import Ticker from './components/Ticker.vue';
 import WalletManager from './components/Wallets/WalletManager.vue';
-import { launcher } from './modules';
+import { auth, launcher } from './modules';
 import { views } from './state';
 
 export default {
@@ -20,7 +21,8 @@ export default {
 		launcher.start();
 		
 		return {
-			views
+			views,
+			auth
 		}
 	},
 	components: {
@@ -45,5 +47,10 @@ export default {
 .menu-enter-to, .menu-leave-from {
   opacity: 1;
   transform: scale(1);
+}
+.google-login {
+	margin-right: 0;
+	margin-left: auto;
+	background: none;
 }
 </style>

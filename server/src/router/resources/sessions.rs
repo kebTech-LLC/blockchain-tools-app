@@ -51,7 +51,7 @@ pub async fn route_sessions(method: HttpMethod, operation: Option<String>, data:
     let data: DataIn = serde_json::from_value(data).map_err(|e| bad_request!(&e.to_string()))?;
 
     if operation.requires_auth() {
-        match Resource::authenticate(auth_token.clone()) {
+        match Resource::authenticate(auth_token.clone()).await {
             Ok(_user) => {},
             Err(e) => return Err(unauthorized!(e))
         }

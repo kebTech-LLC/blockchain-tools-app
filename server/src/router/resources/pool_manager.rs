@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use solana::{pool_manager::{new_position::{NewPosition, NewProgrammaticPosition}, position_manager::managed_position::ManagedPosition, PoolManager}, wallet::Wallet};
 
+use crate::router::rest::Resource;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct DataIn {
     id: Option<String>, 
@@ -51,15 +53,14 @@ impl Operation {
     }
 
     fn requires_auth(&self) -> bool {
-        !matches!(
-            self, 
-            Operation::Unrecognized 
-            | Operation::AllPositions 
+        match self {
+            Operation::ClosePosition 
+            | Operation::OpenProgrammaticPosition 
+            | Operation::SwapTokens 
             | Operation::OpenPosition
-            | Operation::ClosePosition
-            | Operation::ConnectLocalWallet
-            | Operation::DisconnectLocalWallet
-        )
+            | Operation::ToggleAutoRebalance => true,
+            _ => false,
+        }
     }
 }
 
@@ -73,9 +74,9 @@ pub async fn route_pool_manager(
     let operation = Operation::from_option(operation);
     let data: DataIn = serde_json::from_value(data_val.clone()).map_err(|e| bad_request!(e))?;
 
-    // if operation.requires_auth() {
-    //     Resource::authenticate(auth_token.clone()).map_err(|e| unauthorized!(e))?;
-    // }
+    if operation.requires_auth() {
+        Resource::authenticate(auth_token.clone()).await.map_err(|e| unauthorized!(e))?;
+    }
 
     match method {
         HttpMethod::GET => match operation {

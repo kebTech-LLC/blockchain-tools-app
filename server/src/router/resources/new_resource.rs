@@ -55,7 +55,7 @@ pub async fn route_new_resource(
     let data: DataIn = serde_json::from_value(data_val.clone()).map_err(|e| bad_request!(e))?;
 
     if operation.requires_auth() {
-        Resource::authenticate(auth_token.clone()).map_err(|e| unauthorized!(e))?;
+        Resource::authenticate(auth_token.clone()).await.map_err(|e| unauthorized!(e))?;
     }
 
     match method {
