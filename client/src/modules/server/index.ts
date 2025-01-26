@@ -139,7 +139,7 @@ export class Server {
                     const wsProtocol = protocol.includes('s')? 'wss://' : 'ws://';
                     this.socket = new WebSocket(wsProtocol + host + '/ws?client_id=' + this.clientId);
                     this.socket.onerror = (e) => err(e);
-                    await this.socketListeners();
+                    this.socketListeners()
                     ok()
                 })
                 .catch(e => err(e));

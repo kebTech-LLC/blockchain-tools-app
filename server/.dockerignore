@@ -1,0 +1,6 @@
+.env
+target
+Dockerfile
+generate-db.sh
+publish_server.sh
+.dockerignore

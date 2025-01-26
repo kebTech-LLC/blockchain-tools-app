@@ -3,8 +3,8 @@
 RETRIES=5
 i=1
 
-# Default tag is "stg"
-TAG="stg"
+# Default tag is "latest"
+TAG="latest"
 
 # Check if -t argument is provided
 while getopts ":t:" opt; do

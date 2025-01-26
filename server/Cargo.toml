@@ -1,5 +1,5 @@
 [package]
-name = "blockchain_tools_app_server"
+name = "blockchain-tools-server"
 version = "0.1.0"
 edition = "2021"
 
@@ -24,7 +24,7 @@ chrono = "0.4.39"
 tokio-tungstenite ={ version = "0.26.1", features = ["native-tls"] }
 futures-util = "0.3.31"
 url = "2.5.4"
-solana = { version = "0.1.0", path = "../../modules/rust/solana"  }
+solana = { path = "../../modules/rust/solana"  }
 solana-sdk = "2.1.11"
 solana-client = "2.1.11"
 kebtech_utils = { path = "../../modules/rust/utils" }
