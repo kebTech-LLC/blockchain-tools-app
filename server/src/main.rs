@@ -14,7 +14,7 @@ pub mod router;
 pub mod external_apis;
 pub mod centralized_marketplaces;
 pub mod solana_pools;
-// pub mod db;
+pub mod db;
 
 #[tokio::main]
 async fn main() {
