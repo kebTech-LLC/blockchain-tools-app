@@ -74,9 +74,9 @@ pub async fn route_pool_manager(
     let operation = Operation::from_option(operation);
     let data: DataIn = serde_json::from_value(data_val.clone()).map_err(|e| bad_request!(e))?;
 
-    if operation.requires_auth() {
-        Resource::authenticate(auth_token.clone()).await.map_err(|e| unauthorized!(e))?;
-    }
+    // if operation.requires_auth() {
+    //     Resource::authenticate(auth_token.clone()).await.map_err(|e| unauthorized!(e))?;
+    // }
 
     match method {
         HttpMethod::GET => match operation {
