@@ -1,6 +1,6 @@
 <template>
     <div class="orca-pool" ref="menuContainer">
-        <div class="field name">{{ pool.name }}</div>
+        <div class="field name">{{ pool.name + ' ' + (pool.feeRate * .0001) + '%' }}</div>
         <div class="field yield">{{ (pool.yieldOverTvl * 100).toFixed(2) + '%' }}</div>
         <div class="field tvl">{{ '$' + new Intl.NumberFormat().format(Number(pool.tvlUsdc.toFixed(2))) }}</div>
         <div class="field 24volume">{{ '$' + new Intl.NumberFormat().format(Number(pool.volumeUsdc24h.toFixed(2))) }}</div>

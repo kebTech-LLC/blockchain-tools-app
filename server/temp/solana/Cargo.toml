@@ -1,0 +1,35 @@
+[package]
+name = "solana"
+version = "0.1.0"
+edition = "2021"
+publish = ["kellnr"]
+
+[dependencies]
+tokio-uds = "0.2.7"
+anyhow = "1.0.95"
+serde = { version = "1.0.217", features = ["derive"] }
+serde_json = "1.0.137"
+tokio = { version = "1.43.0", features = ["full"] }
+chrono = "0.4.39"
+orca_pools_ipc_types = { path = "../orca_pools_ipc_types" }
+dotenv = "0.15.0"
+solana-sdk = "2.1.10"
+solana-client = "2.1.10"
+bincode = "1.3.3"
+borsh = "1.5.3"
+spl-token = "7.0.0"
+mpl-token-metadata = "5.1.0"
+state = "0.6.0"
+url = "2.5.4"
+tokio-tungstenite = "0.26.1"
+futures-util = "0.3.31"
+hmac = "0.12.1"
+sha2 = "0.10.8"
+base64 = "0.22.1"
+solana-transaction-status = "2.1.10"
+kebtech_utils = { path = "../utils" }
+colored = "3.0.0"
+helius = "0.2.4"
+figlet-rs = "0.1.5"
+jupiter-swap-api-client = { git = "https://github.com/jup-ag/jupiter-swap-api-client.git", package = "jupiter-swap-api-client"}
+
