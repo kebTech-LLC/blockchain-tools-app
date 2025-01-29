@@ -20,18 +20,7 @@ async fn main() {
     dotenv::dotenv().ok();
 
     // Load secrets and environment variables
-    let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET not set");
-    let google_client_id = env::var("GOOGLE_CLIENT_ID").expect("GOOGLE_CLIENT_ID not set");
-    let server_id = env::var("SERVER_ID").unwrap_or_else(|_| "1".to_string());
-    let port_str = env::var("SERVER_PORT").unwrap_or_else(|_| "5050".to_string());
-    let client_dir = env::var("CLIENT_DIR").ok();
-    let jwt_secret_bytes = jwt_secret.as_bytes().to_owned();
-
-    // Initialize shared components
-    router::rest::JWT_SECRET.set(jwt_secret.into());
-    router::rest::GOOGLE_CLIENT_ID.set(google_client_id.into());
-    let rest_router = RestRouter;
-    let socket_router = SocketRouter;
+   
 
     // Allowed origins for CORS
     // let ip_address = local_ip().map(|ip| ip.to_string()).unwrap_or_else(|_| "127.0.0.1".to_string());
@@ -42,34 +31,10 @@ async fn main() {
     // ];
 
     // Server configuration
-    let server_config = ServerConfig::new(
-        &server_id,
-        &port_str,
-        client_dir,
-        rest_router,
-        Some(10),                  // Maximum concurrent connections
-        None,     // Allowed CORS origins
-        None,                      // Optional TLS config
-    );
+
 
     // Socket configuration
-    let socket_config = SocketConfig::new(
-        socket_router,
-        Some(jwt_secret_bytes),    // Secret for WebSocket auth
-        None,    
-        None,                  // Optional Redis URL
-        // Some(Arc::new(|client_info| {
-        //     let client_info_clone = client_info.clone();
-        //     tokio::spawn(async move {
-        //         let mut session = ClientSession::new(client_info_clone);
-        //         if let Err(e) = session.disconnect().upload().await {
-        //             println!("Error uploading session: {:?}", e);
-        //         } else {
-        //             println!("Session successfully uploaded.");
-        //         }
-        //     });
-        // })),
-    );
+
 
     // Start periodic session uploads
     // ClientSession::start_periodic_upload().await;
@@ -90,11 +55,52 @@ async fn main() {
 
     // Prepare a future for the server
     let server_future = async {
-        if let Err(e) = CnctdServer::start(server_config, Some(socket_config)).await {
-            println!("Server error: {:?}", e);
-        } else {
-            println!("Server started successfully.");
+        loop {
+            let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET not set");
+            let google_client_id = env::var("GOOGLE_CLIENT_ID").expect("GOOGLE_CLIENT_ID not set");
+            let server_id = env::var("SERVER_ID").unwrap_or_else(|_| "1".to_string());
+            let port_str = env::var("SERVER_PORT").unwrap_or_else(|_| "5050".to_string());
+            let jwt_secret_bytes = jwt_secret.as_bytes().to_owned();
+            router::rest::JWT_SECRET.set(jwt_secret.into());
+            router::rest::GOOGLE_CLIENT_ID.set(google_client_id.into());
+            let rest_router = RestRouter;
+            let socket_router = SocketRouter;
+            let client_dir = env::var("CLIENT_DIR").ok();
+            let server_config = ServerConfig::new(
+                &server_id,
+                &port_str,
+                client_dir,
+                rest_router,
+                Some(10),                  // Maximum concurrent connections
+                None,     // Allowed CORS origins
+                None,                      // Optional TLS config
+            );
+            let socket_config = SocketConfig::new(
+                socket_router,
+                Some(jwt_secret_bytes),    // Secret for WebSocket auth
+                None,    
+                None,                  // Optional Redis URL
+                // Some(Arc::new(|client_info| {
+                //     let client_info_clone = client_info.clone();
+                //     tokio::spawn(async move {
+                //         let mut session = ClientSession::new(client_info_clone);
+                //         if let Err(e) = session.disconnect().upload().await {
+                //             println!("Error uploading session: {:?}", e);
+                //         } else {
+                //             println!("Session successfully uploaded.");
+                //         }
+                //     });
+                // })),
+            );
+            if let Err(e) = CnctdServer::start(server_config, Some(socket_config)).await {
+                println!("Server error: {:?}", e);
+                tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+            } else {
+                println!("Server exited. Retrying in 5 seconds...");
+                tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+            }
         }
+        
     };
 
     // Prepare a future for the PoolManager
@@ -105,9 +111,8 @@ async fn main() {
                 tx.clone()
             ).await {
                 Ok(_) => {
-                    println!("PoolManager exited successfully.");
-                    // If PoolManager::start() ever returns Ok, we break.
-                    break;
+                    println!("PoolManager exited successfully. Retrying in 30 seconds...");
+                    tokio::time::sleep(tokio::time::Duration::from_secs(30)).await;
                 }
                 Err(e) => {
                     println!("PoolManager Error: {:?}. Retrying in 30 seconds...", e);

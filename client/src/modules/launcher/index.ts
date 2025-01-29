@@ -39,9 +39,9 @@ export class Launcher {
         // console.log('build date ', state.visitor.buildDate);
         await solana.populateLocalWalletPubkey();
         await solana.populateProgrammaticWalletPubkey();
+        await poolManager.populateOrcaPools();
         await server.registerSocket();
         console.log('socket registered from launcher');
-        await poolManager.populateOrcaPools();
         // if (state.visitor.shareId) {
         //     console.log('share link detected');
         //     state.views.splashScreen = true;
