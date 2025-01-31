@@ -1,22 +1,15 @@
 import { server } from "@/modules"
+import { Swap } from "@/modules/solana/swap"
 
 const resource = 'tokens'
 
 export default {
-    swap: (data: any): Promise<any> => {
+    swap: (swap: Swap): Promise<void> => {
         return new Promise((ok, err) => {
-            server.post(resource, 'swap', data)
-                .then(r => ok(r.data))
-                .catch(e => err(e))
-        })
-    },
-
-    register: (): Promise<string> => {
-        return new Promise((ok, err) => {
-            server.post(resource, 'register', { subscriptions: ['server-info', 'managed-position'] })
+            server.post(resource, 'swap', swap.toSnakeCase())
                 .then(r => {
-                    const clientId: string = r.data
-                    ok(clientId)
+                    console.log(r)
+                    ok()
                 })
                 .catch(e => err(e))
         })

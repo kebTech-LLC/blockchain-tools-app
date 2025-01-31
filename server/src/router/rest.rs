@@ -1,5 +1,5 @@
 use crate::router::resources::{
-    new_resource::route_new_resource, pool_manager::route_pool_manager, public_key::route_public_key, sessions::route_sessions
+    new_resource::route_new_resource, pool_manager::route_pool_manager, public_key::route_public_key, sessions::route_sessions, tokens::route_tokens
   
 };
 use std::{future::Future, pin::Pin};
@@ -21,6 +21,7 @@ pub enum Resource {
     PublicKey,
     Sessions,
     PoolManager,
+    Tokens,
     Unrecognized,
 }
 
@@ -31,6 +32,7 @@ impl Resource {
             "public_key" => Resource::PublicKey,
             "sessions" => Resource::Sessions,
             "pool_manager" => Resource::PoolManager,
+            "tokens" => Resource::Tokens,
             _ => Resource::Unrecognized,
         }
     }
@@ -96,6 +98,9 @@ async fn route(method: HttpMethod, path: String, data: Value, auth_token: Option
         }
         Resource::PoolManager => {
             Ok(route_pool_manager(method, operation, data, auth_token, client_id).await?)
+        }
+        Resource::Tokens => {
+            Ok(route_tokens(method, operation, data, auth_token, client_id).await?)
         }
         _ => {
             let response = ErrorResponse::new(

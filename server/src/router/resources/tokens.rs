@@ -4,6 +4,7 @@ use cnctd_server::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use solana::pool_manager::{swap::Swap, PoolManager};
 use crate::router::rest::Resource;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -13,10 +14,9 @@ struct DataIn {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct IncomingTokenSwap {
-    pub wallet_address: String,
-    pub pool_address: Option<String>,
     pub amount: u64,
     pub amount_is_in: bool,
+    pub mint_in_address: String,
     pub mint_out_address: String,
     pub slippage_tolerance: Option<u16>,
 }
@@ -46,7 +46,7 @@ impl Operation {
     }
 }
 
-pub async fn route_token(
+pub async fn route_tokens(
     method: HttpMethod,
     operation: Option<String>,
     data_val: Value,
@@ -65,11 +65,21 @@ pub async fn route_token(
             _ => Err(bad_request!("Invalid operation for GET")),
         },
         HttpMethod::POST => match operation {
-            // Operation::Swap => {
-            //     let incoming_token_swap: IncomingTokenSwap = serde_json::from_value(data_val.clone()).map_err(|e| bad_request!(e))?;
+            Operation::Swap => {
+                let incoming_token_swap: IncomingTokenSwap = serde_json::from_value(data_val.clone()).map_err(|e| bad_request!(e))?;
 
-            //     let swap_instructions = 
-            // }
+                let swap = Swap::new(
+                    incoming_token_swap.mint_in_address.clone(),
+                    incoming_token_swap.mint_out_address.clone(),
+                    incoming_token_swap.amount,
+                    incoming_token_swap.amount_is_in,
+                    incoming_token_swap.slippage_tolerance.unwrap_or(50),
+                );
+
+                PoolManager::queue_programmatic_swap(swap).await.map_err(|e| internal_server_error!(e))?;
+
+                Ok(success_msg!("initiated swap"))
+            }
             _ => Err(bad_request!("Invalid operation for POST")),
         },
         HttpMethod::PUT => match operation {

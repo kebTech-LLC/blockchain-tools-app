@@ -144,7 +144,7 @@ export class NewPosition {
         this.amountA = this.amountTotal * this.distributionA / 100;
         this.amountB = this.amountTotal * this.distributionB / 100;
 
-        console.log(this);
+        // console.log(this);
     }
 
     reset() {

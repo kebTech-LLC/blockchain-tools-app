@@ -1,6 +1,7 @@
 <template>
     <div id="pool-manager">
         <NewPosition v-if="poolManager.newPosition" />
+        <PoolManagerSettings />
         <div class="positions">
             
             <ManagedPosition v-for="position in poolManager.managedPositions" :key="position.address" :position="position" />
@@ -26,6 +27,7 @@ import ManagedPosition from './ManagedPosition.vue';
 import { poolManager } from '@/modules';
 import OrcaPool from './OrcaPool.vue';
 import NewPosition from './NewPosition.vue';
+import PoolManagerSettings from './PoolManagerSettings.vue';
 
 export default defineComponent({
     setup () {
@@ -39,6 +41,7 @@ export default defineComponent({
         ManagedPosition,
         OrcaPool,
         NewPosition,
+        PoolManagerSettings
     }
 })
 </script>

@@ -39,6 +39,7 @@ export class Launcher {
         // console.log('build date ', state.visitor.buildDate);
         await solana.populateLocalWalletPubkey();
         await solana.populateProgrammaticWalletPubkey();
+        await poolManager.populatePositionSettings();
         await poolManager.populateOrcaPools();
         await server.registerSocket();
         console.log('socket registered from launcher');

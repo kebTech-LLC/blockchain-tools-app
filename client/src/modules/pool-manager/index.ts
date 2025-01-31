@@ -6,6 +6,7 @@ import { solana } from "..";
 import { OpenPositionInstruction } from "../orca/open-position-instruction";
 import { ClosePositionInstruction } from "../orca/close-position-instruction";
 import { Wallet } from "../solana/wallet";
+import { PositionSettings } from "./position-settings";
 
 export enum PoolType {
     Orca = 'Orca',
@@ -17,6 +18,7 @@ export class PoolManager {
     managedPositions: ManagedPosition[] = [];
     orcaPools: any[] = [];
     newPosition: NewPosition | null = null;
+    positionSettings: PositionSettings[] = [];
     updateTimer: {
         frequency: number | null;
         // progress: number | null;
@@ -38,6 +40,12 @@ export class PoolManager {
         const managedPositions = await api.poolManager.get.allPositions();
         this.managedPositions.length = 0;
         this.managedPositions = managedPositions.map((position: any) => new ManagedPosition(position));
+    }
+
+    async populatePositionSettings() {
+        const positionSettings = await api.poolManager.get.allPositionSettings();
+        this.positionSettings.length = 0;
+        this.positionSettings = positionSettings;
     }
 
     async removeManagedPositions(positions: ManagedPosition[]) {
@@ -79,7 +87,7 @@ export class PoolManager {
     }
 
     async closePosition(position: ManagedPosition) {
-        const data = await api.poolManager.closePosition(position);
+        const data = await api.poolManager.closePosition(position.address);
         console.log('data', data);
         const closePositionInstruction = new ClosePositionInstruction(data);
         console.log('closePositionInstruction', closePositionInstruction);
@@ -96,5 +104,23 @@ export class PoolManager {
             console.error('error', error);
         }
      
+    }
+
+    async addPositionSettings(name: string, rangeFactor: number) {
+        const positionSettings = new PositionSettings({ name, rangeFactor });
+        await positionSettings.create();
+    }
+
+    async updatePositionSettings(name: string, rangeFactor: number) {
+        const positionSettings = new PositionSettings({ name, rangeFactor });
+        await positionSettings.update();
+    }
+
+    async deletePositionSettings(name: string) {
+        await api.poolManager.delete.positionSettings(name);
+    }
+
+    async getPositionSetting(name: string) {
+        return this.positionSettings.find((settings) => settings.name === name);
     }
 }

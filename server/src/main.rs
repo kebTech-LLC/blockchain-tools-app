@@ -19,6 +19,11 @@ pub mod solana_pools;
 async fn main() {
     dotenv::dotenv().ok();
 
+    match blockchain_db::db::DB::start().await {
+        Ok(()) => println!("DB started"),
+        Err(e) => println!("DB error: {:?}", e),
+    }
+
     // Load secrets and environment variables
    
 

@@ -121,6 +121,7 @@
 import { poolManager, solana } from '@/modules';
 import { SwapInstructions } from '@/modules/orca/swap-instructions';
 import { TokenSwap } from '@/modules/orca/token-swap';
+import { Swap } from '@/modules/solana/swap';
 import { computed, defineComponent, reactive, ref, watchEffect } from 'vue';
 
 export default defineComponent({
@@ -145,16 +146,29 @@ export default defineComponent({
             amountB: 0,
         });
 
+        // const swap = async() => {
+        //     const amount = Math.round(swapper.amountB * Math.pow(10, swapper.tokenB.decimals));
+        //     const tokenSwap = new TokenSwap(position.wallet.pubkey.toString(), position.pool.address, amount, false, swapper.tokenB.address);
+        //     const response = await tokenSwap.swap();
+        //     console.log(response);
+        //     const swapInstructions = new SwapInstructions(response)
+        //     console.log('swapInstructions', swapInstructions);
+        //     await solana.executeInstructions(swapInstructions, position.wallet);
+        //     position.calculateWalletBalance();
+        // };
+
         const swap = async() => {
             const amount = Math.round(swapper.amountB * Math.pow(10, swapper.tokenB.decimals));
-            const tokenSwap = new TokenSwap(position.wallet.pubkey.toString(), position.pool.address, amount, false, swapper.tokenB.address);
-            const response = await tokenSwap.swap();
-            console.log(response);
-            const swapInstructions = new SwapInstructions(response)
-            console.log('swapInstructions', swapInstructions);
-            await solana.executeInstructions(swapInstructions, position.wallet);
-            position.calculateWalletBalance();
+            const tokenSwap = new Swap(
+                amount,
+                false,
+                swapper.tokenA.address,
+                swapper.tokenB.address,
+                50,
+            );
+            await tokenSwap.swap();
         };
+
 
         const handlePriceChange = (token) => {
             if (token === swapper.tokenA) {

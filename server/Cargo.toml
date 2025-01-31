@@ -29,3 +29,4 @@ solana-sdk = "2.1.11"
 solana-client = "2.1.11"
 kebtech_utils = { path = "../../modules/rust/utils" }
 google-oauth = "1.11.3"
+blockchain_db = { path = "../../modules/rust/blockchain_db" }

@@ -3,6 +3,7 @@ import { TokenSwap } from "@/modules/orca/token-swap"
 import { ManagedPosition } from "@/modules/pool-manager/managed-position"
 import { NewPosition, NewProgrammaticPosition } from "@/modules/pool-manager/new-position"
 import { OrcaPool } from "@/modules/pool-manager/orca-pool"
+import { PositionSettings } from "@/modules/pool-manager/position-settings"
 
 const resource = 'pool_manager'
 
@@ -14,6 +15,16 @@ export default {
                     .then(r => {
                         console.log('response', r)
                         ok(r.data)
+                    })
+                    .catch(e => err(e))
+            })
+        },
+        allPositionSettings: (): Promise<PositionSettings[]> => {
+            return new Promise((ok, err) => {
+                server.get(resource, 'all-position-settings', {})
+                    .then(r => {
+                        const positionSettings = r.data.map((data: any) => new PositionSettings(data));
+                        ok(positionSettings)
                     })
                     .catch(e => err(e))
             })
@@ -47,6 +58,25 @@ export default {
                     .then(r => ok(r.data))
                     .catch(e => err(e))
             })
+        },
+        positionSettings: (name: string): Promise<PositionSettings> => {
+            return new Promise((ok, err) => {
+                server.get(resource, 'position-settings', { name })
+                    .then(r => {
+                        const positionSettings = new PositionSettings(r.data);
+                        ok(positionSettings)
+                    })
+                    .catch(e => err(e))
+            })
+        }
+    },
+    delete: {
+        positionSettings: (name: string): Promise<void> => {
+            return new Promise((ok, err) => {
+                server.delete(resource, 'position-settings', { name })
+                    .then(_r => ok())
+                    .catch(e => err(e))
+            })
         }
     },
     openPosition: (position: NewPosition): Promise<any> => {
@@ -56,9 +86,9 @@ export default {
                 .catch(e => err(e))
         })
     },
-    closePosition: (position: ManagedPosition): Promise<any> => {
+    closePosition: (address: string): Promise<any> => {
         return new Promise((ok, err) => {
-            server.put(resource, 'close-position', position.toSnakeCase())
+            server.put(resource, 'close-position', { address })
                 .then(r => ok(r.data))
                 .catch(e => err(e))
         })
@@ -105,6 +135,26 @@ export default {
         return new Promise((ok, err) => {
             server.post(resource, 'swap-tokens', tokenSwap.toSnakeCase())
                 .then(r => ok(r.data))
+                .catch(e => err(e))
+        })
+    },
+    addPositionSettings: (positionSettings: PositionSettings): Promise<PositionSettings> => {
+        return new Promise((ok, err) => {
+            server.post(resource, 'position-settings', positionSettings.toSnakeCase())
+                .then(r => {
+                    const positionSettings = new PositionSettings(r.data);
+                    ok(positionSettings)
+                })
+                .catch(e => err(e))
+        })
+    },
+    updatePositionSettings: (positionSettings: PositionSettings): Promise<PositionSettings> => {
+        return new Promise((ok, err) => {
+            server.put(resource, 'position-settings', positionSettings.toSnakeCase())
+                .then(r => {
+                    const positionSettings = new PositionSettings(r.data);
+                    ok(positionSettings)
+                })
                 .catch(e => err(e))
         })
     }
