@@ -185,6 +185,11 @@ export class ManagedPosition {
         return this.balanceTotalUsd * this.estimated24hYield / 100;
     }
 
+    get rangeFactor() {
+        const middle = (this.rangeUpper + this.rangeLower) / 2;
+        return (this.rangeUpper - middle) / middle;
+    }
+
     async close() {
         await poolManager.closePosition(this);
         console.log('closed position', this);

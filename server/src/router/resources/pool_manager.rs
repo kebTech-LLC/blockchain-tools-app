@@ -4,7 +4,7 @@ use cnctd_server::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use solana::{pool_manager::{new_position::{NewPosition, NewProgrammaticPosition}, position_manager::managed_position::ManagedPosition, PoolManager}, services::position_settings::PositionSettings, wallet::Wallet};
+use solana::{pool_manager::{new_position::{NewManualPosition, NewPosition}, position_manager::managed_position::{ManagedPosition, PoolType}, PoolManager}, services::position_settings::PositionSettings, wallet::Wallet};
 
 use crate::router::rest::Resource;
 
@@ -15,6 +15,10 @@ struct DataIn {
     wallet_key: Option<String>,
     name: Option<String>,
     range_factor: Option<f64>,
+    pool_address: Option<String>,
+    pool_type: Option<PoolType>,
+    token_mint_a: Option<String>,
+    token_mint_b: Option<String>,
 }
 
 enum Operation {
@@ -123,7 +127,7 @@ pub async fn route_pool_manager(
         HttpMethod::POST => match operation {
             Operation::OpenPosition => {
                 println!("incoming data: {:?}", data_val);
-                let new_position: NewPosition = serde_json::from_value(data_val).map_err(|e| bad_request!(e))?;
+                let new_position: NewManualPosition = serde_json::from_value(data_val).map_err(|e| bad_request!(e))?;
 
                 println!("Opening position with new_position: {:?}", new_position);
                 let open_position_instructions = PoolManager::open_position(new_position).await.map_err(|e| internal_server_error!(e))?;
@@ -132,7 +136,13 @@ pub async fn route_pool_manager(
                 Ok(success_data!(json!(open_position_instructions)))
             }
             Operation::OpenProgrammaticPosition => {
-                let new_position: NewProgrammaticPosition = serde_json::from_value(data_val).map_err(|e| bad_request!(e))?;
+
+                let new_position = NewPosition::new(
+                    data.pool_type.ok_or_else(|| bad_request!("Missing pool type"))?,
+                    data.pool_address.ok_or_else(|| bad_request!("Missing pool address"))?,
+                    data.token_mint_a.ok_or_else(|| bad_request!("Missing token mint A"))?,
+                    data.token_mint_b.ok_or_else(|| bad_request!("Missing token mint B"))?,
+                ).await.map_err(|e| internal_server_error!(e))?;
 
                 PoolManager::queue_programmatic_open(new_position).await.map_err(|e| internal_server_error!(e))?;
 

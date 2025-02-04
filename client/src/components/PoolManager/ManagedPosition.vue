@@ -7,6 +7,7 @@
         <div class="range">
             <div class="lower">{{ position.rangeLower }}</div>
             <div class="upper">{{ position.rangeUpper }}</div>
+            <div class="range-factor">{{ (position.rangeFactor * 100).toFixed(2) }}%</div>
         </div>
         <div class="balance">
             <div class="token-a">{{ position.balanceTokenAUsd.toFixed(2) }}</div>
