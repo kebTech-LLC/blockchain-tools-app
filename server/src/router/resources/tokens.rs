@@ -74,6 +74,7 @@ pub async fn route_tokens(
                     incoming_token_swap.amount,
                     incoming_token_swap.amount_is_in,
                     incoming_token_swap.slippage_tolerance.unwrap_or(50),
+                    None,
                 );
 
                 PoolManager::queue_programmatic_swap(swap).await.map_err(|e| internal_server_error!(e))?;
