@@ -4,7 +4,7 @@ use cnctd_server::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use solana::{pool_manager::{new_position::{NewManualPosition, NewPosition}, position_manager::managed_position::{ManagedPosition, PoolType}, PoolManager}, services::position_settings::PositionSettings, wallet::Wallet};
+use solana::{pool_manager::{managed_position::{ManagedPosition, PoolType}, new_position::{NewManualPosition, NewPosition}, PoolManager}, services::position_settings::PositionSettings, wallet::Wallet};
 
 use crate::router::rest::Resource;
 
