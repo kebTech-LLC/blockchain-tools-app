@@ -48,6 +48,7 @@ export class Server {
     socket: WebSocket | undefined;
     clientId: string | undefined;
     info: ServerInfo | undefined;
+    reconnectionIntervalId = null as null | ReturnType<typeof setInterval>;
 
     constructor() {
         this.socketListeners.bind(this);
@@ -146,51 +147,6 @@ export class Server {
         });
     }
 
-    // registerSocket(): Promise<void> {
-    //     return new Promise((resolve, reject) => {
-    //         if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-    //             resolve();
-    //             return;
-    //         }
-    
-    //         console.log('registering socket')
-    //         const subscriptions = ['server-info'];
-    //         // if (auth.userAccount?.isAdmin) subscriptions.push('client-info');
-    //         const unauthString = !auth.loggedIn && visitor.mode === 'share' ? '&unauth_id=' + visitor.shareId : '';
-    //         console.log('unauth string', unauthString);
-    //         const registrationUrl = `${protocol}//${host}/register?subscriptions=${subscriptions}` + unauthString;
-    //         fetch(registrationUrl, { 
-    //             // headers: {
-    //             //     'Content-Type': 'application/json',
-    //             //     ...(auth.userSession?.access_token && {
-    //             //         'Authorization': auth.userSession.access_token
-    //             //     }),
-    //             // },
-    //             mode: 'cors',
-    //         })
-    //         .then(r => r.json())
-    //         .then(async r => {
-    //             const clientId = r.data;
-    //             console.log('server assigned client id', clientId);
-    //             this.clientId = clientId;
-    //             const wsProtocol = protocol.includes('s')? 'wss://' : 'ws://';
-    //             this.socket = new WebSocket(wsProtocol + host + '/ws?client_id=' + clientId);
-    //             this.socket.onerror = (e) => reject(e);
-    //             await this.socketListeners();
-    //         })
-    //         .then(resolve)
-    //         .catch(reject);
-    //     });
-    // }
-
-    // async authenticateSocket() {
-    //     return await api.socket.update.authenticate(this.clientId!, auth.user!.id)
-    // }
-
-    // async updateSocketUserId(userId: string) {
-    //     return await api.socket.update.userId(this.clientId!, userId)
-    // }
-
     restartSocket() {
         console.log('Restarting application socket');
         if (this.socket) {
@@ -204,6 +160,10 @@ export class Server {
         if (this.socket) {
             const responseChannel = uuidv4();
             this.socket.onopen = () => {
+                if (this.reconnectionIntervalId) {
+                    clearInterval(this.reconnectionIntervalId);
+                    this.reconnectionIntervalId = null;
+                }
                 this.socket!.onmessage = m => {
                     const message = new IncomingSocketMessage(JSON.parse(m.data))
                     message.route();
@@ -212,14 +172,19 @@ export class Server {
             this.socket.onerror = e => console.error('socket error', e)
             this.socket.onclose = () => {
                 console.log('socket closed. Attempting to reconnect every 5 seconds.')
-                    const intervalId = setInterval(() => {
-                        this.registerSocket().then(async () => {
-                            console.log('Reconnected successfully. Stopping attempts.');
-                            clearInterval(intervalId);
-                        }).catch((error) => {
-                            console.error('Reconnection attempt failed:', error);
-                        });
-                    }, 5000);
+                if (this.reconnectionIntervalId) {
+                    clearInterval(this.reconnectionIntervalId);
+                }
+                this.reconnectionIntervalId = setInterval(() => {
+                    this.registerSocket().then(async () => {
+                        console.log('Reconnected successfully. Stopping attempts.');
+                        
+                        if (this.reconnectionIntervalId) clearInterval(this.reconnectionIntervalId);
+                        this.reconnectionIntervalId = null;
+                    }).catch((error) => {
+                        console.error('Reconnection attempt failed:', error);
+                    });
+                }, 5000);
             }
         } else {
             console.error('socket is not defined')
