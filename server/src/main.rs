@@ -138,15 +138,12 @@ async fn main() {
     };
 
     // Now run all three tasks concurrently:
-    // - The server will keep running until it returns or errors.
-    // - The PoolManager will keep retrying in a loop.
-    // - The receiver loop will keep reading until `tx` is dropped.
-    tokio::select! {
-        // _ = coinbase_future => (),
-        _ = server_future => (),
-        _ = pool_manager_future => (),
-        _ = rx_future => (),
-    }
+    // - All tasks will keep running unless the process exits or panics.
+    let (_server_res, _pool_manager_res, _rx_res) = tokio::join!(
+        server_future,
+        pool_manager_future,
+        rx_future,
+    );
 
     println!("All tasks have finished, shutting down main.");
 }

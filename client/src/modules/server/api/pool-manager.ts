@@ -31,7 +31,14 @@ export default {
         },
         orcaPools: (limit?: number): Promise<OrcaPool[]> => {
             return new Promise((ok, err) => {
-                fetch('https://stats-api.mainnet.orca.so/api/whirlpools?limit=' + (limit || 50) + '&sort=volume:desc')
+                // fetch('https://stats-api.mainnet.orca.so/api/whirlpools?limit=' + (limit || 50) + '&sort=volume:desc')
+                fetch('https://api.orca.so/v2/solana/pools?limit=' + (limit || 50) + '&stats=5m,15m,30m,1H,2H,4H,8H,24H,7D,30D', {
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    }
+                })
                     .then(response => response.json())
                     .then((data: { data: OrcaPool[], meta: any }) => {
                         ok(data.data)
